@@ -1,0 +1,124 @@
+#'---
+#'title: "Week 1: Regression analysis in R"
+#'author: Rod Bond
+#'---
+#'
+#+ comment=NA
+
+## load in the packages you will be using
+library(tidyverse)
+library(lavaan)
+library(psych)
+library(semPlot)
+library(lm.beta)
+
+## load in the data 
+nezu <- read.csv("./data/nezu.csv")
+
+##visualise the data
+ggplot(aes(nls), data=nezu)+
+  geom_freqpoly(bins=10)
+
+## using facet wrap to display graphs of different variables side by side
+nezu %>% gather(nls:dep, key=variable, value = value) %>% 
+  ggplot(aes(x = value))+
+  geom_freqpoly(bins=10)+
+  facet_wrap(~variable, scales = "free_x", ncol = 2)+
+  theme_bw()
+
+#using density rather than count #do not need to specify columns as blank will select all
+nezu %>% gather(nls:dep, key=variable, value = value) %>% 
+  ggplot(aes(x = value, y=..density..))+
+  geom_freqpoly(bins=10)+
+  facet_wrap(~variable, scales = "free_x", ncol = 2)+
+  theme_bw()
+
+## Scatterplots
+ggplot(data=nezu, mapping=aes(x=nls, y=dep))+
+  geom_jitter(size=2)+
+  xlab("Life Stress")+
+  ylab("Depression")+
+  geom_smooth()
+
+#  descriptive statistics
+describe(nezu)
+
+# correlations
+cor(nezu) %>% round(2)
+
+#covariance matrix
+cov(nezu) %>% round(2)
+
+# using corr.test() and pairs.panels() from psych package
+corr.test(nezu)
+
+pairs.panels(nezu)
+
+# regression model for the Nezu & Ronan data
+# Depression on Life Stress
+
+reg.out <-lm(dep ~ nls, data=nezu)
+summary(reg.out)
+
+lm.beta(reg.out)
+
+summary(lm.beta(reg.out))
+
+## using lavaan
+# 1. Specify the model
+# NB nls ~~ nls - don't specify exogenous variable parameters unless add fixed.x=FALSE to sem function
+
+regr.mod <- '
+  dep ~ nls
+# variances
+  dep ~~ dep'
+  
+# fit the model
+regr.out<-sem(regr.mod, data=nezu)  
+
+# use semPaths to display the model
+# rotation specifies that independent variables are 1 = At top 2 = left hand side 3 = bottom 4 = right hand side
+# sizeMan width of manifest nodes
+# sizeMan2 height of manifest nodes
+# color man = manifest nodes lat = latent nodes int = intercepts
+
+
+
+# print the results
+summary(regr.out)
+summary(regr.out, standardized=TRUE)
+summary(regr.out, standardized=TRUE, rsq=TRUE)
+
+## plot the results
+semPaths(object=regr.out, what="path", whatLabels="std", style="lisrel", layout="tree", intercepts=FALSE, rotation=2,  sizeMan=10,  color = "pink")
+
+# Depression on Current Problems including the intercept
+
+regr2.mod <- '
+  dep ~ 1 + cp
+'
+
+# or specify separately
+regr2.mod <- '
+  dep ~ cp
+  dep ~ 1
+'
+
+# multiple regression
+
+# using lm()
+mreg.out <- lm(dep ~ cp + ps + nls, data = nezu)
+summary(mreg.out)
+lm.beta(mreg.out)
+
+#using lavaan
+mreg.mod <- '
+  dep ~ nls + ps + cp
+'
+
+# run the model
+mreg.out <- sem(mreg.mod,data=nezu)
+summary(mreg.out, standardized = TRUE, rsq=TRUE)
+
+# draw the model
+semPaths(object=mreg.out, what="path", whatLabels="std", curve=5, style="lisrel", rotation = 2)

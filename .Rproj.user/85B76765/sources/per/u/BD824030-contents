@@ -1,0 +1,23 @@
+---
+title: "SEM_week1"
+author: "Helena Blackmore"
+date: "28 January 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(tidyverse)
+library(lavaan)
+library(psych)
+library(semPlot)
+library(lm.beta)
+```
+```{r}
+nezu<-read.csv(".data/nezu.csv")
+
+```
+
+

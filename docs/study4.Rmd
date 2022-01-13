@@ -1,0 +1,299 @@
+---
+title: "study 4 data analysis"
+output:
+  rmdformats::material:
+    code_folding: show
+
+---
+# Tidy data
+## set-up
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	error = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
+library(tidyverse)
+library(kableExtra)
+library(knitr)
+library(plotly)
+library(broom)
+library(wesanderson)
+library(robust)
+```
+## Read data
+```{r read_data}
+# reads excel data sheet
+
+data <- read.csv("../data/study4.csv") # reads data
+data_sat <- read.csv("../data/raw/stage3_satisfaction.csv") # reads in satisfaction data
+
+
+
+# summary(data) # explore the data types, missing data and typos
+
+data <- data %>%
+  mutate(gender = ifelse(gender == "m", "m", "f")) # corrects an issuewith extra space in "f "
+
+data$gender <- as.factor(data$gender)
+data$pp_number <- as.factor(data$pp_number)
+data$condition <-as.factor(data$condition)
+
+
+# mood data
+mood1 <- read.csv("../data/raw/stage1_mood.csv") %>%
+  select(subject, stimulusitem2, response)%>%
+  rename(response1=response, feeling = stimulusitem2)%>%
+  mutate(stage = 1)
+
+mood2 <- read.csv("../data/raw/stage2_mood.csv") %>%
+  select(subject, stimulusitem2,  response)%>%
+  rename(response2=response,  feeling = stimulusitem2)%>%
+  mutate(stage = 2)
+
+mood3 <- read.csv("../data/raw/stage3_mood.csv") %>%
+  select(subject, stimulusitem2, response) %>%
+  rename(response3=response,  feeling = stimulusitem2)%>%
+  mutate(stage = 3)
+
+
+# qualtrics data 
+      #mainly info about drinking
+
+data_q <- read.csv("../data/other/study_4Q.csv")%>%
+  select(Q21, gender, age, Q15, Q16)%>%
+  rename(subject = Q21, 
+         units = Q15, 
+         units_beer = Q16)%>%
+  mutate(subject = as.numeric(subject),
+         condition = subject %/% 1000)%>%
+  filter(!is.na(subject))%>%
+  mutate(subject = as.factor(subject), 
+         gender=as.factor(gender), 
+         age = as.numeric(age), 
+         units = as.numeric(units), 
+         units_beer = as.numeric(units_beer))%>%
+  filter( subject != "6666")
+
+
+
+
+```
+## data joins
+```{r joining data}
+
+DA <- data %>%
+  select(pp_number, BMI)%>%
+  rename(subject = pp_number)
+
+DB <- data_sat %>%
+  select(subject, response, trialcode ) %>%
+  mutate(row = row_number(), subject = as.factor(subject)) %>%
+  pivot_wider(names_from = trialcode, values_from = response) %>%
+  rename( wtp = VAS_wtp)%>%
+  select(- row)
+
+
+D1 <- inner_join( DA,DB,
+                  by = "subject",
+                  keep = FALSE
+                ) %>%
+    pivot_longer(cols =c(VAS, wtp) , 
+                 names_to = "measure", 
+                 values_to = "rating") %>%
+    inner_join(., data_q,
+             by = "subject", 
+             keep = FALSE)%>%
+  filter(!is.na(rating))
+                                            # long dataset incl,. info about satisfaction and willingness to pay by condition, and alcohol/ non-alcohol
+# need to add focus condition
+
+
+#Joining mood data
+
+D2 <- inner_join(mood1, mood2, 
+                 by = c("subject", "feeling"),
+                 keep = FALSE) %>%
+  inner_join(., mood3,
+             by = c("subject","feeling"),
+             keep = FALSE)%>%
+            select(- starts_with("stage")) %>%
+  mutate(condition = subject  %/% 1000) %>%
+  pivot_longer(cols = starts_with("response"),
+   names_to = "stage",
+   names_prefix = "response",
+   values_to = "rating")
+  
+                 
+
+```
+
+# describing data
+
+## BMI, gender & age 
+```{r pp descriptives}
+
+# gender
+total_n <- nrow(data)
+males <- data_q%>%filter(gender == "male") %>% nrow()
+females <- data_q%>%filter(gender == "female") %>% nrow()
+nonbinary <- data_q %>% filter(gender== "non-binary" )%>% nrow()
+
+data_q %>%
+  group_by(gender)%>%
+  summarise(n=n())
+
+mean_BMI <- mean(data$BMI, na.rm = TRUE) %>%
+  round(.,1)
+sd_BMI <- sd(data$BMI, na.rm = TRUE) %>%
+  round(., 1)
+
+# by condition
+gender_tib <- D1 %>% 
+  filter(measure == "wtp") %>% # avoids duplicating data
+  group_by( condition) %>%
+  summarise(n=n(),
+            BMI = mean(BMI, na.rm = TRUE), 
+            age = mean(age, na.rm = TRUE)) %>% 
+  kable()
+
+gender_tib
+
+```
+
+```{r conditions}
+## by condition
+conditions_tib <- data %>% 
+  select(pp_number, condition, gender, BMI) %>%
+  group_by( condition) %>%
+  summarise(n=n(), BMI = mean(BMI, na.rm = TRUE)) %>% 
+  kable()
+
+## satisfaction
+satis_tib <- D1 %>%
+  group_by(condition, measure) %>%
+  summarise(response = mean(rating, na.rm = TRUE))
+
+
+```
+
+## mood
+```{r mood}
+mood_cond_tib <- D2 %>% group_by(feeling, stage) %>%
+  summarise(m_rating = mean(rating, na.rm = TRUE), sd_f = sd(rating))%>%  # Using dplyr functions
+  mutate_if(is.numeric,
+            round,
+            digits = 1)%>%
+  rename(mean = m_rating, sd = sd_f)%>%
+  kable() %>%
+  kable_styling(full_width = TRUE, 
+                "striped")
+
+```
+
+There were total of `r total_n` participants (`r males` males, `r females` females, `r nonbinary` non-binary ).  The BMI of pp ranged between `r min(data$BMI)` and `r max(data$BMI)`, with the average BMI *M* = `r round(mean(data$BMI, na.rm = TRUE),1)` (*sd* = `r round(sd(data$BMI, na.rm = TRUE),1)`). 
+
+
+
+# Initial analyses
+
+## differences between conditions
+
+### gender
+```{r gender_conditions_plot, fig.cap= "Number of partivipants in each conditions"}
+# plot
+## barplot is best here
+
+gender_cond_plot <-
+  ggplot(data = data_q)+
+  geom_bar(aes(x= condition, fill = gender))+
+  scale_fill_manual(values = c("#d62828", "#003049", "grey65")) +
+  scale_y_continuous(name="", limits=c(0, 40), breaks = seq(0,40, 5)) +
+  scale_x_discrete(name = "conditions", breaks = seq(1,6,1), limits = c("1", "2", "3", "4", "5", "6"))+
+  theme(panel.grid = element_blank())+
+  theme_minimal()
+
+ ggplotly(gender_cond_plot)  
+
+```
+```{r gender_conditions_analysis}
+# logistic regression 
+
+xtabs(~ gender + condition , data = data) %>%
+  kable() %>%
+  kable_styling()
+
+log_model <-
+  glm(condition ~ gender, data = data, family = binomial(), na.action = na.fail)
+
+broom::glance(log_model)
+tidy_log <- broom::tidy(log_model)
+
+
+cond_int <- glm(condition ~ 1, data = data, family = binomial())
+cond_gend <- glm(condition ~ gender, data = data, family = binomial())
+anova(cond_int, cond_gend, test = "Chisq")
+```
+<!-- blurb about gender and if there are significant differences in conditions in numbers etc.-->
+Gender is not associated with condition, ie. the gender split is roughly equal accross the conditions *p* = `r round(tidy_log$p.value,3)`.
+
+### Age
+
+```{r age, fig.cap= "Participants' age by condition and gedner"}
+data_desc <- D1 %>%
+  filter(measure == "wtp")
+
+ggplot(aes(x=condition, y = age, color = gender), data= data_desc)+
+  geom_jitter( position=position_jitter(0.2), cex=1.5 )+
+  stat_summary(fun.y=mean, geom="point", shape=18,
+                 size=3, color="#5D5F71")+
+  stat_summary(fun.data=mean_cl_boot, 
+                 geom="pointrange", color="#5D5F71")+
+  scale_y_continuous(name="age", limits=c(18, 60), breaks = seq(0,60, 10)) +
+  scale_x_discrete(name = "conditions", limits = c("1", "2", "3", "4", "5", "6"))+
+  scale_color_manual(values = c("#d62828", "#003049", "grey65")) +
+  theme_minimal()
+```
+### BMI
+
+```{r BMI, fig.cap=" Participants' BMI by condition and gender"}
+ggplot(aes(x=condition, y = BMI, color = gender), data= data_desc)+
+  geom_jitter( position=position_jitter(0.2), cex=1.5 )+
+  stat_summary(fun.y=mean, geom="point", shape=18,
+                 size=3, color="#5D5F71")+
+  stat_summary(fun.data=mean_cl_boot,  
+                 geom="pointrange", color="#5D5F71")+
+  scale_y_continuous(name="BMI", limits=c(18, 35), breaks = seq(0,35, 10)) +
+  scale_x_discrete(name = "conditions", limits = c("1", "2", "3", "4", "5", "6"))+
+  scale_color_manual(values = c("#d62828", "#003049", "grey65")) +
+  theme_minimal()
+
+```
+### baseline mood
+
+```{r mood_conditions_plot, fig.cap= ""}
+mood_base <- D2 %>%
+  filter(stage == 1)
+
+palette <- c("#033f63","#28666e","#7c9885","#b5b682","#fedc97","#e5e1ee","#c17767","#210203","#eb9486","#82204a", "#0a2342","#2ca58d","#84bc9c","#fffdf7","#f46197","#fec601")
+
+ggplot(data = mood_base, aes(x=condition, y = rating, group = condition, fill = feeling))+
+  geom_boxplot()+
+  facet_wrap("feeling")+
+  scale_fill_manual(values = palette) +
+  scale_y_continuous(name="", limits=c(0, 100), breaks = seq(0,100, 20)) +
+  theme(panel.grid = element_blank())+
+  theme_minimal()
+  
+
+```
+
+
+
+### drinking
+
+
+
+
+

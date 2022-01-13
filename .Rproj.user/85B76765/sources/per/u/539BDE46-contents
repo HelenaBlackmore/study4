@@ -1,0 +1,15 @@
+---
+title: "optional_stopping"
+author: "Helena Blackmore"
+date: "24 January 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+
+```
+
