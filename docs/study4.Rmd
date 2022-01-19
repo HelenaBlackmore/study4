@@ -2,12 +2,14 @@
 title: "study 4 data analysis"
 output:
   rmdformats::material:
-    code_folding: show
+    code_folding: hide
+    css: "style.css"
 
 ---
 # Tidy data
-## set-up
-```{r setup, include=FALSE}
+
+## Set-up
+```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
 knitr::opts_chunk$set(
 	echo = TRUE,
 	error = FALSE,
@@ -21,6 +23,8 @@ library(plotly)
 library(broom)
 library(wesanderson)
 library(robust)
+library(ggparl)
+
 ```
 ## Read data
 ```{r read_data}
@@ -80,7 +84,7 @@ data_q <- read.csv("../data/other/study_4Q.csv")%>%
 
 
 ```
-## data joins
+## Data joins
 ```{r joining data}
 
 DA <- data %>%
@@ -129,9 +133,11 @@ D2 <- inner_join(mood1, mood2,
 
 ```
 
-# describing data
 
-## BMI, gender & age 
+# Descriptive analyses
+
+## Differences between conditions
+
 ```{r pp descriptives}
 
 # gender
@@ -140,14 +146,7 @@ males <- data_q%>%filter(gender == "male") %>% nrow()
 females <- data_q%>%filter(gender == "female") %>% nrow()
 nonbinary <- data_q %>% filter(gender== "non-binary" )%>% nrow()
 
-data_q %>%
-  group_by(gender)%>%
-  summarise(n=n())
 
-mean_BMI <- mean(data$BMI, na.rm = TRUE) %>%
-  round(.,1)
-sd_BMI <- sd(data$BMI, na.rm = TRUE) %>%
-  round(., 1)
 
 # by condition
 gender_tib <- D1 %>% 
@@ -158,57 +157,40 @@ gender_tib <- D1 %>%
             age = mean(age, na.rm = TRUE)) %>% 
   kable()
 
-gender_tib
 
 ```
 
-```{r conditions}
-## by condition
-conditions_tib <- data %>% 
-  select(pp_number, condition, gender, BMI) %>%
-  group_by( condition) %>%
-  summarise(n=n(), BMI = mean(BMI, na.rm = TRUE)) %>% 
-  kable()
+### Gender
 
-## satisfaction
-satis_tib <- D1 %>%
-  group_by(condition, measure) %>%
-  summarise(response = mean(rating, na.rm = TRUE))
-
-
-```
-
-## mood
-```{r mood}
-mood_cond_tib <- D2 %>% group_by(feeling, stage) %>%
-  summarise(m_rating = mean(rating, na.rm = TRUE), sd_f = sd(rating))%>%  # Using dplyr functions
-  mutate_if(is.numeric,
-            round,
-            digits = 1)%>%
-  rename(mean = m_rating, sd = sd_f)%>%
-  kable() %>%
+```{r gender_conditions}
+xtabs(~ gender + condition , data = data_q,drop.unused.levels = TRUE)%>%
+  kable(digits = 2, caption = "A contingency table with observed gender values/counts across conditions") %>%
   kable_styling(full_width = TRUE, 
-                "striped")
+                position = "left")
+
+chi_test <- chisq.test(data_q$gender, data_q$condition, simulate.p.value = TRUE)
+
+chi_test$expected %>%
+  kable(digits = 1, caption = "A contingency table of expected gender values/counts across conditions")%>%
+  kable_styling(full_width = TRUE,
+                position = "left")
+  
+
+#  χ2 test requires all expected frequencies to be greater than five --> simulate.p.value avoids the problem
 
 ```
 
-There were total of `r total_n` participants (`r males` males, `r females` females, `r nonbinary` non-binary ).  The BMI of pp ranged between `r min(data$BMI)` and `r max(data$BMI)`, with the average BMI *M* = `r round(mean(data$BMI, na.rm = TRUE),1)` (*sd* = `r round(sd(data$BMI, na.rm = TRUE),1)`). 
+Altogether `r total_n` participants took part in the study, as is common for psychology studies, most of these were women (`r females` self-identified as female, `r males` as male and `r nonbinary` as non-binary). The gender split across the conditions was not problematic $\chi^2$ = `r round(chi_test$statistic,2)`, *p* = `r round(chi_test$p.value,3)` (simulated *p* values based on 2000 replicates, as expected values << 5).
 
 
-
-# Initial analyses
-
-## differences between conditions
-
-### gender
-```{r gender_conditions_plot, fig.cap= "Number of partivipants in each conditions"}
+```{r gender_conditions_plot, fig.cap= "Number of participants in each conditions"}
 # plot
-## barplot is best here
-
+## bar plot is best here
+gender_pal <- c("#d62828", "#003049", "#9d69a3")
 gender_cond_plot <-
   ggplot(data = data_q)+
   geom_bar(aes(x= condition, fill = gender))+
-  scale_fill_manual(values = c("#d62828", "#003049", "grey65")) +
+  scale_fill_manual(values = gender_pal) +
   scale_y_continuous(name="", limits=c(0, 40), breaks = seq(0,40, 5)) +
   scale_x_discrete(name = "conditions", breaks = seq(1,6,1), limits = c("1", "2", "3", "4", "5", "6"))+
   theme(panel.grid = element_blank())+
@@ -217,62 +199,74 @@ gender_cond_plot <-
  ggplotly(gender_cond_plot)  
 
 ```
-```{r gender_conditions_analysis}
-# logistic regression 
-
-xtabs(~ gender + condition , data = data) %>%
-  kable() %>%
-  kable_styling()
-
-log_model <-
-  glm(condition ~ gender, data = data, family = binomial(), na.action = na.fail)
-
-broom::glance(log_model)
-tidy_log <- broom::tidy(log_model)
-
-
-cond_int <- glm(condition ~ 1, data = data, family = binomial())
-cond_gend <- glm(condition ~ gender, data = data, family = binomial())
-anova(cond_int, cond_gend, test = "Chisq")
-```
-<!-- blurb about gender and if there are significant differences in conditions in numbers etc.-->
-Gender is not associated with condition, ie. the gender split is roughly equal accross the conditions *p* = `r round(tidy_log$p.value,3)`.
 
 ### Age
-
-```{r age, fig.cap= "Participants' age by condition and gedner"}
+```{r age_conditions}
 data_desc <- D1 %>%
   filter(measure == "wtp")
 
-ggplot(aes(x=condition, y = age, color = gender), data= data_desc)+
-  geom_jitter( position=position_jitter(0.2), cex=1.5 )+
-  stat_summary(fun.y=mean, geom="point", shape=18,
-                 size=3, color="#5D5F71")+
-  stat_summary(fun.data=mean_cl_boot, 
-                 geom="pointrange", color="#5D5F71")+
+age_lm <- lm(age ~ condition, data=data_desc)
+
+age_sum <- broom::tidy(age_lm)
+age_glance <- broom::glance(age_lm)
+```
+
+Participants' age ranged between `r min(data_desc$age, na.rm = TRUE)` and `r max(data_desc$age, na.rm = TRUE)`. Most participants were very young and the mean age of participants was `r round(mean(data_desc$age, na.rm = TRUE),1)` (*sd* = `r round(sd(data_desc$age, na.rm = TRUE),1)`). The age did not significantly differ across the six conditions F(`r age_glance$df.residual`, `r age_glance$df`) = `r round(age_glance$statistic,2)`, *p* = `r round(age_glance$p.value,3)`.
+
+```{r age, fig.cap= "Participants' age by condition and gender. Note range of the y-axis "}
+
+
+age_plot <- ggplot(data= data_desc, aes(x=condition, y = age, group = condition) )+
+  geom_boxplot(fill= "#6c757d", alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(shape=16, position=position_jitter(0.2), aes(color = gender))+
   scale_y_continuous(name="age", limits=c(18, 60), breaks = seq(0,60, 10)) +
   scale_x_discrete(name = "conditions", limits = c("1", "2", "3", "4", "5", "6"))+
-  scale_color_manual(values = c("#d62828", "#003049", "grey65")) +
+  scale_color_manual(values = gender_pal) +
   theme_minimal()
+
+age_plot2 <- ggplot(data= data_desc, aes(x=condition, y = age, group = condition) )+
+  geom_boxplot(fill= "#6c757d", alpha = 0.5, outlier.shape = NA) +
+  geom_jitter(shape=16, position=position_jitter(0.2), aes(color = gender))+
+  scale_y_continuous(name="age", limits=c(15, 30), breaks = seq(15,30,5)) +
+  scale_x_discrete(name = "conditions", limits = c("1", "2", "3", "4", "5", "6"))+
+  scale_color_manual(values = gender_pal) +
+  theme_minimal()
+
+ggplotly(age_plot)
+ggplotly(age_plot2)
 ```
+
+
 ### BMI
+```{r BMI_conditions}
+
+bmi_lm <- lm(BMI ~ condition, data=data_desc)
+
+bmi_glance <- broom::glance(bmi_lm)
+
+```
+
+The participants' BMI ranged between `r round(min(data_desc$BMI, na.rm = TRUE),1)` - `r round(max(data_desc$BMI, na.rm = TRUE),1)`. The average BMI was `r round(mean(data_desc$BMI),1)` (*sd* =`r round(sd(data_desc$BMI),1)`) and again, this did not differ across conditions F(`r bmi_glance$df.residual`, `r bmi_glance$df`) = `r round(bmi_glance$statistic,2)`, *p* = `r round(bmi_glance$p.value, 3)`.
 
 ```{r BMI, fig.cap=" Participants' BMI by condition and gender"}
-ggplot(aes(x=condition, y = BMI, color = gender), data= data_desc)+
-  geom_jitter( position=position_jitter(0.2), cex=1.5 )+
-  stat_summary(fun.y=mean, geom="point", shape=18,
-                 size=3, color="#5D5F71")+
-  stat_summary(fun.data=mean_cl_boot,  
-                 geom="pointrange", color="#5D5F71")+
+BMI_plot <- ggplot(aes(x=condition, y = BMI), data= data_desc)+
+  geom_boxplot(fill= "#6c757d", alpha = 0.5) +
+  geom_jitter(shape=16, position=position_jitter(0.2), aes(color = gender))+
   scale_y_continuous(name="BMI", limits=c(18, 35), breaks = seq(0,35, 10)) +
   scale_x_discrete(name = "conditions", limits = c("1", "2", "3", "4", "5", "6"))+
-  scale_color_manual(values = c("#d62828", "#003049", "grey65")) +
+  scale_color_manual(values = gender_pal) +
   theme_minimal()
 
-```
-### baseline mood
+ggplotly(BMI_plot)
 
-```{r mood_conditions_plot, fig.cap= ""}
+```
+
+
+
+### Baseline mood
+
+Visual inspection of participants' baseline mood does not give raise to any concerns. *Do I need to run 16 anovas? Does not seem necessary...)*
+```{r mood_conditions_plot, fig.cap= "Participants' baseline mood ratings"}
 mood_base <- D2 %>%
   filter(stage == 1)
 
@@ -290,10 +284,124 @@ ggplot(data = mood_base, aes(x=condition, y = rating, group = condition, fill = 
 ```
 
 
+### Drinking
 
-### drinking
+#### alcohol consumption
 
+```{r alcohol_consumption, include = FALSE}
+pp_over14units <-data_q%>%filter(units>14)%>%nrow() # no. of pp consuming more than 14 units of alcohol a week
 
+# statistical analysis
 
+al_cons_lm <- lmRob(units ~ condition, data= data_q)
+al_model<-summary(al_cons_lm)
+al_a<-anova(al_cons_lm)
 
+beer_cons_lm <-lmRob(units_beer ~ condition, data = data_q)
+beer_model<-summary(beer_cons_lm)
+beer_a<-anova(beer_cons_lm)
+```
+While the average alcohol consumption was realtively low `r round(mean(data_q$units),1)` (*sd* = `r round(sd(data_q$units),1)`), there was a considerable differences among participants. The lowest alcohol consumption was only `r min(data_q$units)`, equivalent to a half a pint of light beer (3.5%) once a week, the highest alcohol consumption was `r max(data_q$units)` units of alcohol a week, which is equivalent to over 20 pints of strong (~5% abv) beer every week. Interestingly, `r pp_over14units ` (`r round((pp_over14units/total_n)*100,1)`%) participants consumed more than the recommended 14 units a week. We also asked participants to estimate how many units of beer they consumed. This was on average `r round(mean(data_q$units_beer),1)` (*sd* = `r round(sd(data_q$units_beer),1)`), this  however varied between `r min(data_q$units_beer)` and  `r max(data_q$units_beer)`. Thefigures below show participants' weekly alcohol consumption, weekly beer consumption and the proportion of units of alcohol that came from beer. Neither the overall alcohol consumption nor beer consumption differed significantly across the conditions, F(`r al_model$df[1] `, `r al_model$df[2] `) = `r round(al_a$RobustF[2],2)`, *p* = `r round(al_a$"Pr(F)"[2],3)` and F(`r beer_model$df[1] `, `r beer_model$df[2] `) = `r round(beer_a$RobustF[2],2)`, *p* = `r round(beer_a$"Pr(F)"[2],3)`, respectively. 
 
+```{r alcohol_plot, fig.cap="participants' alcohol consumption by condition"}
+
+# plot units alcohol consumption by condition
+
+units_plot<-ggplot(aes(x=condition, 
+           y = units, 
+           group = condition), 
+           data= data_q)+
+  geom_hline(aes(yintercept = 14, linetype = "14 units/week"),
+             color = "red")+
+  scale_linetype_manual(name = "max. recommended\nalcohol consumption", values = c(2, 2),
+                      guide = guide_legend(override.aes = list(color = c("red")), title.theme = element_text(size = 8, face = "bold" ) ))+
+  geom_boxplot(fill= "#6c757d", 
+               alpha = 0.5, 
+               outlier.shape = NA) +
+  geom_jitter(shape=16, 
+              position=position_jitter(0.2), 
+              aes(color = gender))+
+  scale_y_continuous(name="alcohol consumption\n(units)", 
+                     limits=c(0, 75), 
+                     breaks =   seq(0,75, 5)) +
+  scale_x_discrete(name = "conditions", 
+                   limits = c("1", "2", "3", "4", "5", "6"))+
+  scale_color_manual(values = gender_pal) +
+  theme_minimal()
+
+ggplotly(units_plot)
+
+```
+
+```{r beer_plot, fig.cap="participants' beer consumption by condition"}
+# plot units beer consumption by condition
+
+beer_plot<-ggplot(aes(x=condition, 
+           y = units_beer, 
+           group = condition), 
+           data= data_q)+
+  geom_boxplot(fill= "#6c757d", 
+               alpha = 0.5, 
+               outlier.shape = NA) +
+  geom_jitter(shape=16, 
+              position=position_jitter(0.2), 
+              aes(color = gender))+
+  scale_y_continuous(name="beer consumption\n(units)", 
+                     limits=c(0, 35), 
+                     breaks =   seq(0,35, 5)) +
+  scale_x_discrete(name = "conditions", 
+                   limits = c("1", "2", "3", "4", "5", "6"))+
+  scale_color_manual(values = gender_pal) +
+  theme_minimal()
+
+ggplotly(beer_plot)
+
+```
+
+```{r beer_prop_plot, fig.cap="% of alcohol consumption that is beer by condition"}
+
+summary_beer <- data_q %>%
+   pivot_longer(cols = starts_with("units"),  names_to = "al_id", values_to = "units") %>%
+   mutate(al_id = ifelse(al_id =="units", "all", "beer"))%>%
+   group_by(condition, al_id)%>%
+   summarize(units = mean(units))%>%
+  pivot_wider(names_from = al_id, values_from = units)%>%
+  mutate(perc= (beer/all)*100)%>%
+  pivot_longer(cols = c(all, beer), names_to = "alcohol", values_to = "units")
+
+al_pal <- c( "#1d3557","#f4a261")
+  
+beer_prop <- ggplot(data=summary_beer, 
+       aes(x=condition,
+           y=units, 
+           fill = alcohol)) +
+  geom_bar(stat="identity", 
+           position=position_dodge())+
+  geom_text(aes(label =paste0(round(perc,1),"%") ), 
+             data = summary_beer %>%filter(alcohol == "beer"), 
+             show.legend = FALSE,
+             size = 2, 
+             nudge_x = 0.3, 
+             nudge_y = 1,
+             color = "#1d3557" )+
+  scale_fill_manual(values = al_pal)+
+  scale_y_continuous(name="alcohol consumption\n(units)", 
+                     limits=c(0, 15), 
+                     breaks =   seq(0,15, 5)) +
+  scale_x_discrete(name = "conditions", 
+                   limits = c("1", "2", "3", "4", "5", "6"))+
+  labs( fill = "alcohol")+
+  theme_minimal()
+
+ggplotly(beer_prop)
+```
+
+# Expectations & Gustatory Perception
+
+## Bitterness
+
+## Refreshment
+
+## Liking
+
+## Body
