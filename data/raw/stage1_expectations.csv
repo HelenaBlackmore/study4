@@ -783,14 +783,14 @@ date,time,group,subject,build,blocknum,trialnum,blockcode,trialcode,pretrialpaus
 102521,14:26:12,4,6097,5.0.14.0,1,6,expectations,VAS_factor2E_VAS,0,0,0,0,52,1,5236,1,How contented/happy do you expect to be after drinking the beer?,0,1,happy,0,1,sad,0
 102521,14:26:12,4,6097,5.0.14.0,1,7,expectations,VAS_refreshmentE_VAS,0,0,0,0,46,1,3559,1,How REFRESHING do you expect the beer to be?,0,1,not at all,0,1,extremely,0
 102521,14:26:12,4,6097,5.0.14.0,1,8,expectations,VAS_satisE_VAS,0,0,0,0,49,1,3476,1,How satisfied do you expect to be with the product?,0,1,not at all,0,1,extremely,0
-102521,14:30:01,5,5093,5.0.14.0,1,1,expectations,VAS_factor3E_VAS,0,0,0,0,62,1,8811,1,How calm/relaxed do you expect to be after drinking the beer?,1,1,calm/relaxed,1,1,excited/tense,1
-102521,14:30:01,5,5093,5.0.14.0,1,2,expectations,VAS_bodyE_VAS,0,0,0,0,58,1,4612,1,How FULL-BODIED do you expect the beer to be?,0,1,not at all,0,1,extremely,0
-102521,14:30:01,5,5093,5.0.14.0,1,3,expectations,VAS_bitterE_VAS,0,0,0,0,37,1,4941,1,How BITTER do you expect the beer to be?,0,1,not at all,0,1,extremely,0
-102521,14:30:01,5,5093,5.0.14.0,1,4,expectations,VAS_refreshmentE_VAS,0,0,0,0,56,1,3191,1,How REFRESHING do you expect the beer to be?,0,1,not at all,0,1,extremely,0
-102521,14:30:01,5,5093,5.0.14.0,1,5,expectations,VAS_satisE_VAS,0,0,0,0,71,1,6271,1,How satisfied do you expect to be with the product?,1,1,not at all,1,1,extremely,1
-102521,14:30:01,5,5093,5.0.14.0,1,6,expectations,VAS_factor1E_VAS,0,0,0,0,66,1,2950,1,How alert/energetic do you expect to be after drinking the beer?,0,1,alert,0,1,drowsy,0
-102521,14:30:01,5,5093,5.0.14.0,1,7,expectations,VAS_factor2E_VAS,0,0,0,0,17,1,7280,1,How contented/happy do you expect to be after drinking the beer?,0,1,happy,0,1,sad,0
-102521,14:30:01,5,5093,5.0.14.0,1,8,expectations,VAS_likingE_VAS,0,0,0,0,69,1,4133,1,How much do you expect to LIKE the beer?,1,1,not at all,1,1,extremely,1
+102521,14:30:01,5,5098,5.0.14.0,1,1,expectations,VAS_factor3E_VAS,0,0,0,0,62,1,8811,1,How calm/relaxed do you expect to be after drinking the beer?,1,1,calm/relaxed,1,1,excited/tense,1
+102521,14:30:01,5,5098,5.0.14.0,1,2,expectations,VAS_bodyE_VAS,0,0,0,0,58,1,4612,1,How FULL-BODIED do you expect the beer to be?,0,1,not at all,0,1,extremely,0
+102521,14:30:01,5,5098,5.0.14.0,1,3,expectations,VAS_bitterE_VAS,0,0,0,0,37,1,4941,1,How BITTER do you expect the beer to be?,0,1,not at all,0,1,extremely,0
+102521,14:30:01,5,5098,5.0.14.0,1,4,expectations,VAS_refreshmentE_VAS,0,0,0,0,56,1,3191,1,How REFRESHING do you expect the beer to be?,0,1,not at all,0,1,extremely,0
+102521,14:30:01,5,5098,5.0.14.0,1,5,expectations,VAS_satisE_VAS,0,0,0,0,71,1,6271,1,How satisfied do you expect to be with the product?,1,1,not at all,1,1,extremely,1
+102521,14:30:01,5,5098,5.0.14.0,1,6,expectations,VAS_factor1E_VAS,0,0,0,0,66,1,2950,1,How alert/energetic do you expect to be after drinking the beer?,0,1,alert,0,1,drowsy,0
+102521,14:30:01,5,5098,5.0.14.0,1,7,expectations,VAS_factor2E_VAS,0,0,0,0,17,1,7280,1,How contented/happy do you expect to be after drinking the beer?,0,1,happy,0,1,sad,0
+102521,14:30:01,5,5098,5.0.14.0,1,8,expectations,VAS_likingE_VAS,0,0,0,0,69,1,4133,1,How much do you expect to LIKE the beer?,1,1,not at all,1,1,extremely,1
 102621,14:18:21,6,1096,5.0.14.0,1,1,expectations,VAS_factor1E_VAS,0,0,0,0,74,1,10286,1,How alert/energetic do you expect to be after drinking the beer?,0,1,alert,0,1,drowsy,0
 102621,14:18:21,6,1096,5.0.14.0,1,2,expectations,VAS_bodyE_VAS,0,0,0,0,38,1,51508,1,How FULL-BODIED do you expect the beer to be?,0,1,not at all,0,1,extremely,0
 102621,14:18:21,6,1096,5.0.14.0,1,3,expectations,VAS_factor2E_VAS,0,0,0,0,25,1,5167,1,How contented/happy do you expect to be after drinking the beer?,0,1,happy,0,1,sad,0
@@ -1311,14 +1311,14 @@ date,time,group,subject,build,blocknum,trialnum,blockcode,trialcode,pretrialpaus
 112221,14:22:35,4,4162,5.0.14.0,1,6,expectations,VAS_satisE_VAS,0,0,0,0,59,1,3773,1,How satisfied do you expect to be with the product?,1,1,not at all,1,1,extremely,1
 112221,14:22:35,4,4162,5.0.14.0,1,7,expectations,VAS_bitterE_VAS,0,0,0,0,69,1,3198,1,How BITTER do you expect the beer to be?,0,1,not at all,0,1,extremely,0
 112221,14:22:35,4,4162,5.0.14.0,1,8,expectations,VAS_factor2E_VAS,0,0,0,0,39,1,3773,1,How contented/happy do you expect to be after drinking the beer?,0,1,happy,0,1,sad,0
-112221,14:41:40,5,5164,5.0.14.0,1,1,expectations,VAS_likingE_VAS,0,0,0,0,67,1,11032,1,How much do you expect to LIKE the beer?,1,1,not at all,1,1,extremely,1
-112221,14:41:40,5,5164,5.0.14.0,1,2,expectations,VAS_factor3E_VAS,0,0,0,0,45,1,6794,1,How calm/relaxed do you expect to be after drinking the beer?,1,1,calm/relaxed,1,1,excited/tense,1
-112221,14:41:40,5,5164,5.0.14.0,1,3,expectations,VAS_refreshmentE_VAS,0,0,0,0,84,1,7714,1,How REFRESHING do you expect the beer to be?,1,1,not at all,1,1,extremely,1
-112221,14:41:40,5,5164,5.0.14.0,1,4,expectations,VAS_bitterE_VAS,0,0,0,0,68,1,16797,1,How BITTER do you expect the beer to be?,1,1,not at all,1,1,extremely,1
-112221,14:41:40,5,5164,5.0.14.0,1,5,expectations,VAS_factor1E_VAS,0,0,0,0,59,1,12377,1,How alert/energetic do you expect to be after drinking the beer?,1,1,alert,1,1,drowsy,1
-112221,14:41:40,5,5164,5.0.14.0,1,6,expectations,VAS_factor2E_VAS,0,0,0,0,31,1,10501,1,How contented/happy do you expect to be after drinking the beer?,1,1,happy,1,1,sad,1
-112221,14:41:40,5,5164,5.0.14.0,1,7,expectations,VAS_bodyE_VAS,0,0,0,0,56,1,32362,1,How FULL-BODIED do you expect the beer to be?,1,1,not at all,1,1,extremely,1
-112221,14:41:40,5,5164,5.0.14.0,1,8,expectations,VAS_satisE_VAS,0,0,0,0,68,1,3545,1,How satisfied do you expect to be with the product?,0,1,not at all,0,1,extremely,0
+112221,14:41:40,5,2163,5.0.14.0,1,1,expectations,VAS_likingE_VAS,0,0,0,0,67,1,11032,1,How much do you expect to LIKE the beer?,1,1,not at all,1,1,extremely,1
+112221,14:41:40,5,2163,5.0.14.0,1,2,expectations,VAS_factor3E_VAS,0,0,0,0,45,1,6794,1,How calm/relaxed do you expect to be after drinking the beer?,1,1,calm/relaxed,1,1,excited/tense,1
+112221,14:41:40,5,2163,5.0.14.0,1,3,expectations,VAS_refreshmentE_VAS,0,0,0,0,84,1,7714,1,How REFRESHING do you expect the beer to be?,1,1,not at all,1,1,extremely,1
+112221,14:41:40,5,2163,5.0.14.0,1,4,expectations,VAS_bitterE_VAS,0,0,0,0,68,1,16797,1,How BITTER do you expect the beer to be?,1,1,not at all,1,1,extremely,1
+112221,14:41:40,5,2163,5.0.14.0,1,5,expectations,VAS_factor1E_VAS,0,0,0,0,59,1,12377,1,How alert/energetic do you expect to be after drinking the beer?,1,1,alert,1,1,drowsy,1
+112221,14:41:40,5,2163,5.0.14.0,1,6,expectations,VAS_factor2E_VAS,0,0,0,0,31,1,10501,1,How contented/happy do you expect to be after drinking the beer?,1,1,happy,1,1,sad,1
+112221,14:41:40,5,2163,5.0.14.0,1,7,expectations,VAS_bodyE_VAS,0,0,0,0,56,1,32362,1,How FULL-BODIED do you expect the beer to be?,1,1,not at all,1,1,extremely,1
+112221,14:41:40,5,2163,5.0.14.0,1,8,expectations,VAS_satisE_VAS,0,0,0,0,68,1,3545,1,How satisfied do you expect to be with the product?,0,1,not at all,0,1,extremely,0
 112221,14:42:52,6,5164,5.0.14.0,1,1,expectations,VAS_bodyE_VAS,0,0,0,0,44,1,8622,1,How FULL-BODIED do you expect the beer to be?,0,1,not at all,0,1,extremely,0
 112221,14:42:52,6,5164,5.0.14.0,1,2,expectations,VAS_factor1E_VAS,0,0,0,0,61,1,5119,1,How alert/energetic do you expect to be after drinking the beer?,0,1,alert,0,1,drowsy,0
 112221,14:42:52,6,5164,5.0.14.0,1,3,expectations,VAS_factor2E_VAS,0,0,0,0,34,1,3773,1,How contented/happy do you expect to be after drinking the beer?,2,1,happy,2,1,sad,2

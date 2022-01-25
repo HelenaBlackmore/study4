@@ -6,16 +6,25 @@ output:
     css: "style.css"
 
 ---
+<!-- run this to knit:
+
+rmarkdown::render('study4.Rmd',
+                  output_file = paste('index.html'))
+                                                          
+                                                          -->
+
 # Tidy data
 
 ## Set-up
 ```{r setup, echo=TRUE, warning=FALSE, message=FALSE}
+
 knitr::opts_chunk$set(
 	echo = TRUE,
 	error = FALSE,
 	message = FALSE,
 	warning = FALSE
 )
+library(afex)
 library(tidyverse)
 library(kableExtra)
 library(knitr)
@@ -24,6 +33,9 @@ library(broom)
 library(wesanderson)
 library(robust)
 library(ggparl)
+library(mediation)
+
+set.seed(2022)
 
 ```
 ## Read data
@@ -47,17 +59,17 @@ data$condition <-as.factor(data$condition)
 
 # mood data
 mood1 <- read.csv("../data/raw/stage1_mood.csv") %>%
-  select(subject, stimulusitem2, response)%>%
+  dplyr::select(subject, stimulusitem2, response)%>%
   rename(response1=response, feeling = stimulusitem2)%>%
   mutate(stage = 1)
 
 mood2 <- read.csv("../data/raw/stage2_mood.csv") %>%
-  select(subject, stimulusitem2,  response)%>%
+  dplyr::select(subject, stimulusitem2,  response)%>%
   rename(response2=response,  feeling = stimulusitem2)%>%
   mutate(stage = 2)
 
 mood3 <- read.csv("../data/raw/stage3_mood.csv") %>%
-  select(subject, stimulusitem2, response) %>%
+  dplyr::select(subject, stimulusitem2, response) %>%
   rename(response3=response,  feeling = stimulusitem2)%>%
   mutate(stage = 3)
 
@@ -65,8 +77,8 @@ mood3 <- read.csv("../data/raw/stage3_mood.csv") %>%
 # qualtrics data 
       #mainly info about drinking
 
-data_q <- read.csv("../data/other/study_4Q.csv")%>%
-  select(Q21, gender, age, Q15, Q16)%>%
+data_q<- read.csv("../data/other/study_4Q.csv")%>%
+  dplyr::select(Q21, gender, age, Q15, Q16)%>%
   rename(subject = Q21, 
          units = Q15, 
          units_beer = Q16)%>%
@@ -81,22 +93,108 @@ data_q <- read.csv("../data/other/study_4Q.csv")%>%
   filter( subject != "6666")
 
 
+# expectations & perception of taste/flavour
 
+taste_dat <- read.csv("../data/raw/stage1_perception.csv")%>%
+  dplyr::select(subject, trialcode, response)%>%
+  rename(Epercept = trialcode, expected = response)
+
+taste_dat$Epercept<- as.factor(taste_dat$Epercept)
+  
+
+expect_dat<- read.csv("../data/raw/stage1_expectations.csv")%>%
+  dplyr::select(subject, trialcode, response, stimulusitem3)%>%
+  filter(stimulusitem3 == "extremely")%>%
+  dplyr::select(- stimulusitem3)%>%
+  rename(percept = trialcode, perceived = response)
+
+expect_dat$percept<- as.factor(expect_dat$percept)
+
+
+# satisfaction data
+  #merge data_sat and expect_dat
+
+satis_datP <- data_sat %>% 
+  dplyr::select(subject, trialcode, response)%>%
+  dplyr::filter(trialcode == "VAS")
+
+satis_datE <- expect_dat %>%
+  dplyr::filter(percept == "VAS_satisE_VAS")
+
+
+wtp_dat <- data_sat %>%
+  filter(trialcode == "VAS_wtp")%>%
+  dplyr::select(subject, response)
+
+
+# ITT data
+
+itt_s1 <-read.csv("../data/summaries/stage1_ITT.csv")%>%
+  dplyr::select(script.subjectid, expressions.propcorrect_stim1:expressions.propcorrect_stim13)%>%
+  mutate(stage1 = 1)%>%
+  rename(subject = script.subjectid)%>%
+  rename_at(vars(matches("^expressions")), ~ str_remove(.,"^expressions.propcorrect_")) %>%
+  pivot_longer(cols = starts_with("stim") , 
+               names_to = "stimulus" ,
+               values_to = "correct")
+
+
+itt_s2 <-read.csv("../data/summaries/stage2_ITT.csv")%>%
+  dplyr::select(script.subjectid, expressions.propcorrect_stim1:expressions.propcorrect_stim13)%>%
+  mutate(stage2 = 2)%>%
+  rename(subject = script.subjectid)%>%
+  rename_at(vars(matches("^expressions")), ~ str_remove(.,"^expressions.propcorrect_"))%>%
+  pivot_longer(cols = starts_with("stim") , 
+               names_to = "stimulus" ,
+               values_to = "correct")
+
+itt_s3 <-read.csv("../data/summaries/stage3_ITT.csv")%>%
+  dplyr::select(script.subjectid, expressions.propcorrect_stim1:expressions.propcorrect_stim13)%>%
+  mutate(stage3 = 3)%>%
+  rename(subject = script.subjectid)%>%
+  rename_at(vars(matches("^expressions")), ~ str_remove(.,"^expressions.propcorrect_"))%>%
+  pivot_longer(cols = starts_with("stim") , 
+               names_to = "stimulus" ,
+               values_to = "correct")
+
+itt_dat <- inner_join(itt_s1, itt_s2,
+                      by = c("subject","stimulus"),
+                      keep = FALSE,
+                      suffix = c(".1", ".2"))%>%
+          inner_join(., itt_s3,
+                     by = c("subject", "stimulus"),
+                     keep = FALSE) %>%
+  pivot_longer(cols = starts_with("correct") ,
+               names_to = "stage",
+               values_to = "correct")%>%
+  dplyr::select(-c( stage1, stage2, stage3))%>%
+  mutate( stage = case_when(stage == "correct.1" ~ 'stage 1',
+                            stage == "correct.2" ~ "stage 2",
+                            stage == "correct" ~ "stage 3"))%>%
+   mutate(condition = subject %/% 1000) %>%
+  mutate(alcohol = if_else((condition%%2)==1, "alcoholic", "non-alcoholic"))%>%
+  mutate(focus = case_when(condition == 1 ~ 'control',
+                           condition == 2 ~ 'control',
+                           condition == 3 ~ 'hedonic',
+                           condition == 4 ~ 'hedonic',
+                           condition == 5 ~ 'utilitarian',
+                           condition == 6 ~ 'utilitarian'))
+  
 
 ```
 ## Data joins
 ```{r joining data}
 
 DA <- data %>%
-  select(pp_number, BMI)%>%
+  dplyr::select(pp_number, BMI)%>%
   rename(subject = pp_number)
 
 DB <- data_sat %>%
-  select(subject, response, trialcode ) %>%
+  dplyr::select(subject, response, trialcode ) %>%
   mutate(row = row_number(), subject = as.factor(subject)) %>%
   pivot_wider(names_from = trialcode, values_from = response) %>%
   rename( wtp = VAS_wtp)%>%
-  select(- row)
+  dplyr::select(- row)
 
 
 D1 <- inner_join( DA,DB,
@@ -122,14 +220,58 @@ D2 <- inner_join(mood1, mood2,
   inner_join(., mood3,
              by = c("subject","feeling"),
              keep = FALSE)%>%
-            select(- starts_with("stage")) %>%
+            dplyr::select(- starts_with("stage")) %>%
   mutate(condition = subject  %/% 1000) %>%
   pivot_longer(cols = starts_with("response"),
    names_to = "stage",
    names_prefix = "response",
    values_to = "rating")
   
-                 
+
+D3_dat <- inner_join(expect_dat, taste_dat,
+                     by = "subject",
+                     keep = FALSE)%>%
+  mutate(condition = subject %/% 1000) %>%
+  pivot_wider(names_from = percept,
+    values_from = perceived) %>%
+  pivot_wider(names_from = Epercept,
+              values_from = expected)%>%
+  rename_at(vars(matches("^VAS\\_")), ~ str_remove(.,"^VAS\\_"))%>%
+  rename_at(vars(matches("_VAS")), ~ str_remove(.,"_VAS")) %>%
+  mutate(alcohol = if_else((condition%%2)==1, "alcoholic", "non-alcoholic"))%>%
+  mutate(focus = case_when(condition == 1 ~ 'control',
+                           condition == 2 ~ 'control',
+                           condition == 3 ~ 'hedonic',
+                           condition == 4 ~ 'hedonic',
+                           condition == 5 ~ 'utilitarian',
+                           condition == 6 ~ 'utilitarian'))
+  
+
+
+D3_dat$alcohol<- as.factor(D3_dat$alcohol)
+D3_dat$focus<- as.factor(D3_dat$focus)
+D3_dat$condition <- as.factor(D3_dat$condition)
+
+
+satis_dat <- inner_join(satis_datE, satis_datP,
+                        by = "subject",
+                        keep = FALSE)%>%
+              dplyr::select(subject, perceived, response,)%>%
+            rename(satisE = perceived, satis = response)%>%
+              inner_join(., wtp_dat,
+                         by = "subject",
+                         keep = FALSE)%>%
+            rename(wtp = response) %>%
+  mutate(condition = subject %/% 1000) %>%
+  mutate(alcohol = if_else((condition%%2)==1, "alcoholic", "non-alcoholic"))%>%
+  mutate(focus = case_when(condition == 1 ~ 'control',
+                           condition == 2 ~ 'control',
+                           condition == 3 ~ 'hedonic',
+                           condition == 4 ~ 'hedonic',
+                           condition == 5 ~ 'utilitarian',
+                           condition == 6 ~ 'utilitarian'))
+  
+  
 
 ```
 
@@ -246,7 +388,7 @@ bmi_glance <- broom::glance(bmi_lm)
 
 ```
 
-The participants' BMI ranged between `r round(min(data_desc$BMI, na.rm = TRUE),1)` - `r round(max(data_desc$BMI, na.rm = TRUE),1)`. The average BMI was `r round(mean(data_desc$BMI),1)` (*sd* =`r round(sd(data_desc$BMI),1)`) and again, this did not differ across conditions F(`r bmi_glance$df.residual`, `r bmi_glance$df`) = `r round(bmi_glance$statistic,2)`, *p* = `r round(bmi_glance$p.value, 3)`.
+The participants' BMI ranged between `r round(min(data_desc$BMI, na.rm = TRUE),1)` - `r round(max(data_desc$BMI, na.rm = TRUE),1)`. The average BMI was `r round(mean(data_desc$BMI, na.rm = TRUE),1)` (*sd* =`r round(sd(data_desc$BMI,na.rm = TRUE),1)`) and again, this did not differ across conditions F(`r bmi_glance$df.residual`, `r bmi_glance$df`) = `r round(bmi_glance$statistic,2)`, *p* = `r round(bmi_glance$p.value, 3)`.
 
 ```{r BMI, fig.cap=" Participants' BMI by condition and gender"}
 BMI_plot <- ggplot(aes(x=condition, y = BMI), data= data_desc)+
@@ -289,7 +431,8 @@ ggplot(data = mood_base, aes(x=condition, y = rating, group = condition, fill = 
 #### alcohol consumption
 
 ```{r alcohol_consumption, include = FALSE}
-pp_over14units <-data_q%>%filter(units>14)%>%nrow() # no. of pp consuming more than 14 units of alcohol a week
+
+pp_over14units <-data_q %>% filter(units>14)%>%nrow() # no. of pp consuming more than 14 units of alcohol a week
 
 # statistical analysis
 
@@ -398,10 +541,298 @@ ggplotly(beer_prop)
 
 # Expectations & Gustatory Perception
 
+- structural equation modelling
+- gustatory data (expected and perceived are in )
+- because of independent measures design we can use the `mediation` package, function `mediate()`
+  **some resources and documentation **
+  - https://towardsdatascience.com/doing-and-reporting-your-first-mediation-analysis-in-r-2fe423b92171
+  - https://imai.fas.harvard.edu/projects/files/mediationReview.pdf
+
 ## Bitterness
 
+```{r bitter_mediate}
+bitter_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, bitterE, bitter)
+   # prep dataset
+
+# model m A --> M
+mbm <- lm(bitterE ~ focus + alcohol, data = bitter_dat)
+
+# model A--> B
+mby <-lm(bitter ~ bitterE + focus + alcohol,  data = bitter_dat)
+
+med_bitter_focus <- mediate(mbm, mby, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "bitterE",
+   control = "control",
+  conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_bitter_focus)
+
+med_bitter_alcohol <- mediate(mbm, mby, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "bitterE",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_bitter_alcohol)
+
+```
+
+
 ## Refreshment
+```{r refreshment_mediate}
+refresh_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, refreshmentE, refreshment)
+   # prep dataset
+
+# model m A --> M
+mrm <- lm(refreshmentE ~ focus + alcohol, data = refresh_dat)
+
+# model A--> B
+mry <-lm(refreshment ~ refreshmentE + focus + alcohol,  data = refresh_dat)
+
+med_refreshment_focus <- mediate(mrm, mry, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "refreshmentE",
+   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_refreshment_focus)
+plot(med_refreshment_focus)
+
+med_refreshment_alcohol <- mediate(mrm, mry, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "refreshmentE",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_refreshment_alcohol)
+plot(med_refreshment_alcohol)
+
+```
 
 ## Liking
 
+```{r liking_mediate}
+liking_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, likingE, liking)
+   # prep dataset
+
+# model m A --> M
+mlm <- lm(likingE ~ focus + alcohol, data = liking_dat)
+
+# model A--> B
+mly <-lm(liking ~ likingE + focus + alcohol,  data = liking_dat)
+
+med_liking_focus <- mediate(mlm, mly, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "likingE",
+   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_liking_focus)
+plot(med_liking_focus)
+
+med_liking_alcohol <- mediate(mlm, mly, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "likingE",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_liking_alcohol)
+plot(med_liking_alcohol)
+
+```
+
 ## Body
+
+```{r body_mediate}
+body_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, bodyE, body)
+   # prep dataset
+
+# model m A --> M
+mbom <- lm(bodyE ~ focus + alcohol, data = body_dat)
+
+# model A--> B
+mboy <-lm(body ~ bodyE + focus + alcohol,  data = body_dat)
+
+med_body_focus <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "bodyE",
+   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_body_focus)
+plot(med_body_focus)
+
+med_body_alcohol <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "bodyE",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_body_alcohol)
+plot(med_body_alcohol)
+
+```
+
+
+
+
+# Post - ingestive experience
+
+## Satisfaction
+
+```{r satis_mediate}
+
+# model m A --> M
+msm <- lm(satisE ~ focus + alcohol, data = satis_dat)
+
+# model A--> B
+msy <-lm(satis ~ satisE + focus + alcohol,  data = satis_dat)
+
+med_satis_focus <- mediate(msm, msy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "satisE",
+   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_satis_focus)
+plot(med_satis_focus)
+
+med_satis_alcohol <- mediate(msm, msy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "satisE",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_satis_alcohol)
+plot(med_satis_alcohol)
+
+```
+
+
+There was an effect of alcohol content on expected and perceived satisfaction. Participants rated their expected and perceived satisfaction lower when they drank non-alcoholic beer. We, however did not observe a mediation effect. (potentially small effect size, given the pp sample)
+
+** more detail needed here **
+
+## Willingness to pay
+
+```{r wtp_mediate}
+
+# model m A --> M
+mwm <- lm(satis ~ focus + alcohol, data = satis_dat)
+
+# model A--> B
+mwy <-lm(wtp ~ satis + focus + alcohol,  data = satis_dat)
+
+med_wtp_focus <- mediate(mwm, mwy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "focus", mediator = "satis",
+   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+
+summary(med_wtp_focus)
+plot(med_wtp_focus)
+
+med_wtp_alcohol <- mediate(mwm, mwy, sims = 1000, boot = FALSE,
+  boot.ci.type = "perc", treat = "alcohol", mediator = "satis",
+  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+
+summary(med_wtp_alcohol)
+plot(med_wtp_alcohol)
+
+```
+```{r wtp_comparison}
+
+
+wtp_model <- robust::lmRob(wtp ~ focus + alcohol, data = satis_dat)
+summary(wtp_model)
+
+wtp_tib <- satis_dat %>%
+  group_by(focus, alcohol) %>%
+  summarise(n = n(),
+            mean_wtp = mean(wtp, na.rm = TRUE), 
+            sd_wtp = sd(wtp, na.rm = TRUE), 
+            ci_lo = mean_wtp - 1.96 * (sd_wtp/sqrt(n)),
+            ci_high = mean_wtp + 1.96 *(sd_wtp/sqrt(n)))
+
+wtp_tib %>%
+  kable(digits = 2, caption = "Participants' mean willingness to pay in different alcohol and focus conditions.") %>%
+  kable_styling(full_width = TRUE)
+
+
+
+```
+```{r wtp_plot, fig.cap= "Participants' willingness to pay for alcoholic and non-alcoholic beer. Error bars indicate confidence intervals (+/- 1.96 SE)"}
+wtp_bar <-ggplot(aes(x=focus, 
+           y = mean_wtp, 
+           fill = alcohol), 
+           data= wtp_tib)+
+  geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_high), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="willingness to pay (£)", 
+                     limits=c(0, 5), 
+                     breaks =   seq(0,5, 1)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
+
+
+## Cognitive Performance
+
+Participants' cognitive performance was assessed using the inspection time task () which measures participants'information processing. Participants completed the task just before, 30 minutes and 60 minutes after consumption. The data was analysed using a growth curve analysis. 
+
+
+```{r GC_performance}
+
+# these are two methods of analysis, should do the same thing, buttakes too long to run
+
+# m_itt <- lmerTest::lmer(correct ~ focus * alcohol *stage *stimulus + (stage*stimulus| subject), data=itt_dat, REML=F)
+# 
+# summary(m_itt)
+
+# contrasts
+
+itt_afx <- afex::aov_4(correct ~ focus*alcohol*stage*stimulus  + (stimulus*stage|subject), data = itt_dat)
+
+# need to take effects apart and set contrasts
+
+# the main effect of alcohol
+
+alcohol_emm <- emmeans::emmeans(itt_afx, ~alcohol, model = "multivariate")
+alcohol_emm # shows us the means
+
+
+
+# the main effect of stage
+stage_emm <- emmeans::emmeans(itt_afx, ~stage, model = "multivariate")
+stage_emm
+emmeans::contrast(stage_emm, method = "trt.vs.ctrl", ref = 1, adjust = "holm")
+
+#main effect of stimulus
+stimulus_emm <- emmeans::emmeans(itt_afx, ~stimulus, model = "multivariate")
+stimulus_emm
+
+emmeans::contrast(stimulus_emm, method = "poly", adjust = "holm")
+
+# interaction stimulus:stage
+
+inter_emm <- emmeans::emmeans(itt_afx, c("stage", "stimulus"), model = "multivariate")
+inter_emm
+
+emmeans::contrast(
+  inter_emm,
+  c(stage = "trt.vs.ctrl", stimulus = "poly"),
+  rel = 1,
+  adjust = "holm"
+  )
+```
+
+```{r itt_plot, fig.cap= "Participants' cognitive performance"}
+
+itt_dat$stimulus <- as.factor(itt_dat$stimulus) %>%
+  fct_relevel(.,c("stim1", "stim2", "stim3", "stim4", "stim5", "stim6", "stim7", "stim8", "stim9", "stim10", "stim11", "stim12","stim13"))
+
+
+ggplot(data = itt_dat, aes(x = stimulus, y = correct, color = alcohol))+
+  facet_grid(rows = vars(focus),
+             cols = vars(stage))+
+  stat_summary(fun=mean, geom="point") +
+  scale_y_continuous(name="% correct", limits=c(0.5, 1.0), breaks = seq(0.5,1,0.15)) +
+  scale_x_discrete(name = "stimulus duration\n(ms)", labels =c("19", "25", "31", "37", "44", "50", "62", "75", "87", "100", "125", "150", "200") )+ 
+  scale_color_manual(values = gender_pal) +
+  theme(axis.text.x = element_text( color="black", 
+                           size=6, angle=45))+
+  theme_minimal()
+
+```
+
+
+## Mood
+
+
