@@ -549,6 +549,37 @@ ggplotly(beer_prop)
   - https://imai.fas.harvard.edu/projects/files/mediationReview.pdf
 
 ## Bitterness
+```{r bitter_plot, fig.cap = "Expected and perceived ratings of bitterness"}
+
+bitter_tib <-bitter_dat %>%
+  pivot_longer(cols = starts_with("bitter"),
+               names_to = "bitter",
+               values_to = "rating")%>%
+  group_by(alcohol, focus,bitter)%>%
+  summarise(n = n(),
+            meanB = mean(rating, na.rm = TRUE),
+            sdB = sd(rating, na.rm = TRUE),
+            ci_lo = meanB - 1.96 * sdB/sqrt(n),
+            ci_hi = meanB + 1.96 * sdB/sqrt(n))%>%
+  filter(!is.na(focus))
+
+rating_labs <- c("perceived", "expected")
+names(rating_labs) <- c("bitter", "bitterE")
+
+ggplot(aes(x= focus, y = meanB, fill = alcohol), data = bitter_tib ) +
+  facet_grid(~ bitter, 
+             labeller = labeller(bitter = rating_labs))+
+   geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_hi), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="bitterness", 
+                     limits=c(0, 100), 
+                     breaks =   seq(0,100, 25)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
 
 ```{r bitter_mediate}
 bitter_dat <- D3_dat%>%
@@ -567,17 +598,50 @@ med_bitter_focus <- mediate(mbm, mby, sims = 1000, boot = FALSE,
   conf.level = 0.95, control.value = 0, treat.value = 1)
 
 summary(med_bitter_focus)
+plot(med_bitter_focus)
 
 med_bitter_alcohol <- mediate(mbm, mby, sims = 1000, boot = FALSE,
   boot.ci.type = "perc", treat = "alcohol", mediator = "bitterE",
   conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
 
 summary(med_bitter_alcohol)
-
+plot(med_bitter_alcohol)
 ```
 
 
 ## Refreshment
+```{r refreshment_plot, fig.cap = "Expected and perceived ratings of Refreshment \n errorbars indicate 95% CI (1.96 SE)"}
+
+refreshment_tib <-refresh_dat %>%
+  pivot_longer(cols = starts_with("refreshment"),
+               names_to = "refreshment",
+               values_to = "rating")%>%
+  group_by(alcohol, focus,refreshment)%>%
+  summarise(n = n(),
+            meanB = mean(rating, na.rm = TRUE),
+            sdB = sd(rating, na.rm = TRUE),
+            ci_lo = meanB - 1.96 * sdB/sqrt(n),
+            ci_hi = meanB + 1.96 * sdB/sqrt(n))%>%
+  filter(!is.na(focus))
+
+rating_labs <- c("perceived", "expected")
+names(rating_labs) <- c("refreshment", "refreshmentE")
+
+ggplot(aes(x= focus, y = meanB, fill = alcohol), data = refreshment_tib ) +
+  facet_grid(~ refreshment, 
+             labeller = labeller(refreshment = rating_labs))+
+   geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_hi), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="refreshment", 
+                     limits=c(0, 100), 
+                     breaks =   seq(0,100, 25)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
+
 ```{r refreshment_mediate}
 refresh_dat <- D3_dat%>%
   dplyr::select(subject, alcohol, focus, condition, refreshmentE, refreshment)
@@ -606,6 +670,38 @@ plot(med_refreshment_alcohol)
 ```
 
 ## Liking
+
+```{r liking_plot, fig.cap = "Expected and perceived ratings of liking"}
+
+liking_tib <-liking_dat %>%
+  pivot_longer(cols = starts_with("liking"),
+               names_to = "liking",
+               values_to = "rating")%>%
+  group_by(alcohol, focus,liking)%>%
+  summarise(n = n(),
+            meanB = mean(rating, na.rm = TRUE),
+            sdB = sd(rating, na.rm = TRUE),
+            ci_lo = meanB - 1.96 * sdB/sqrt(n),
+            ci_hi = meanB + 1.96 * sdB/sqrt(n))%>%
+  filter(!is.na(focus))
+
+rating_labs <- c("perceived", "expected")
+names(rating_labs) <- c("liking", "likingE")
+
+ggplot(aes(x= focus, y = meanB, fill = alcohol), data = liking_tib ) +
+  facet_grid(~ liking, 
+             labeller = labeller(liking = rating_labs))+
+   geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_hi), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="liking", 
+                     limits=c(0, 100), 
+                     breaks =   seq(0,100, 25)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
 
 ```{r liking_mediate}
 liking_dat <- D3_dat%>%
@@ -636,6 +732,38 @@ plot(med_liking_alcohol)
 
 ## Body
 
+```{r body_plot, fig.cap = "Expected and perceived ratings of body"}
+
+body_tib <-body_dat %>%
+  pivot_longer(cols = starts_with("body"),
+               names_to = "body",
+               values_to = "rating")%>%
+  group_by(alcohol, focus,body)%>%
+  summarise(n = n(),
+            meanB = mean(rating, na.rm = TRUE),
+            sdB = sd(rating, na.rm = TRUE),
+            ci_lo = meanB - 1.96 * sdB/sqrt(n),
+            ci_hi = meanB + 1.96 * sdB/sqrt(n))%>%
+  filter(!is.na(focus))
+
+rating_labs <- c("perceived", "expected")
+names(rating_labs) <- c("body", "bodyE")
+
+ggplot(aes(x= focus, y = meanB, fill = alcohol), data = body_tib ) +
+  facet_grid(~ body, 
+             labeller = labeller(body = rating_labs))+
+   geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_hi), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="body", 
+                     limits=c(0, 100), 
+                     breaks =   seq(0,100, 25)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
+
 ```{r body_mediate}
 body_dat <- D3_dat%>%
   dplyr::select(subject, alcohol, focus, condition, bodyE, body)
@@ -652,6 +780,7 @@ med_body_focus <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
    control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
 
 summary(med_body_focus)
+
 plot(med_body_focus)
 
 med_body_alcohol <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
@@ -669,6 +798,38 @@ plot(med_body_alcohol)
 # Post - ingestive experience
 
 ## Satisfaction
+
+```{r satis_plot, fig.cap = "Expected and perceived ratings of satisfaction"}
+
+satis_tib <-satis_dat %>%
+  pivot_longer(cols = starts_with("satis"),
+               names_to = "satis",
+               values_to = "rating")%>%
+  group_by(alcohol, focus,satis)%>%
+  summarise(n = n(),
+            meanB = mean(rating, na.rm = TRUE),
+            sdB = sd(rating, na.rm = TRUE),
+            ci_lo = meanB - 1.96 * sdB/sqrt(n),
+            ci_hi = meanB + 1.96 * sdB/sqrt(n))%>%
+  filter(!is.na(focus))
+
+rating_labs <- c("perceived", "expected")
+names(rating_labs) <- c("satis", "satisE")
+
+ggplot(aes(x= focus, y = meanB, fill = alcohol), data = satis_tib ) +
+  facet_grid(~ satis, 
+             labeller = labeller(satis = rating_labs))+
+   geom_bar(stat="identity", position=position_dodge())+
+  geom_errorbar(aes(ymin=ci_lo, ymax=ci_hi), width=.2,
+                 position=position_dodge(.9))+
+  scale_y_continuous(name="satisfaction", 
+                     limits=c(0, 100), 
+                     breaks =   seq(0,100, 25)) +
+  scale_x_discrete(name = "focus" )+
+  scale_fill_manual(values = gender_pal) +
+  theme_minimal()
+
+```
 
 ```{r satis_mediate}
 
@@ -759,6 +920,8 @@ wtp_bar <-ggplot(aes(x=focus,
   scale_x_discrete(name = "focus" )+
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
+
+wtp_bar
 
 ```
 
