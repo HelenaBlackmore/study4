@@ -61,18 +61,41 @@ data$condition <-as.factor(data$condition)
 mood1 <- read.csv("../data/raw/stage1_mood.csv") %>%
   dplyr::select(subject, stimulusitem2, response)%>%
   rename(response1=response, feeling = stimulusitem2)%>%
-  mutate(stage = 1)
+  mutate(stage = 1)%>%
+  filter(subject != 6666)
 
 mood2 <- read.csv("../data/raw/stage2_mood.csv") %>%
   dplyr::select(subject, stimulusitem2,  response)%>%
   rename(response2=response,  feeling = stimulusitem2)%>%
-  mutate(stage = 2)
+  mutate(stage = 2)%>%
+  filter(subject != 6666)
 
 mood3 <- read.csv("../data/raw/stage3_mood.csv") %>%
   dplyr::select(subject, stimulusitem2, response) %>%
   rename(response3=response,  feeling = stimulusitem2)%>%
-  mutate(stage = 3)
+  mutate(stage = 3)%>%
+  filter(subject != 6666)
 
+mood_dat <- inner_join( mood1, mood2,
+                        by = c("subject", "feeling"), 
+                        keep = FALSE)%>%
+            inner_join(., mood3,
+                       by = c("subject", "feeling"),
+                       keep = FALSE)%>%
+            dplyr::select(- starts_with("stage")) %>%
+            pivot_longer(cols = response1:response3,
+                         names_to ="stage",
+                         values_to = "rating")%>%
+            pivot_wider(names_from = "feeling",
+                        values_from ="rating" )%>%
+            mutate(alert = (alert +strong + `clear-headed` + `well-coordinated` + energetic + `quick-witted` + attentive + proficient + interested )/9,
+                   content =(contented + tranquil + amicable + gregarious)/4,
+                   calm =(calm + relaxed)/2)
+
+
+
+
+#`clear-headed` + `well-coordinated` + energetic + `quick-witted` + attentive + proficient + interested
 
 # qualtrics data 
       #mainly info about drinking
@@ -1244,4 +1267,64 @@ ggplotly(itt_plot, height = 500, width=1200)
 
 ## Mood
 
+```{r mood_plot, fig.cap="Participants'mood accross the stages and conditions"}
+mood_data<- mood_dat %>%
+  dplyr::select(subject, stage, calm, content, alert)%>%
+  pivot_longer(cols = c(calm, content, alert),
+               names_to = "factor",
+               values_to = "rating")%>%
+  mutate(condition = subject%/% 1000)%>%
+  mutate(alcohol = if_else((condition%%2)==1, "alcoholic", "non-alcoholic"))%>%
+  mutate(focus = case_when(condition == 1 ~ 'control',
+                           condition == 2 ~ 'control',
+                           condition == 3 ~ 'hedonic',
+                           condition == 4 ~ 'hedonic',
+                           condition == 5 ~ 'utilitarian',
+                           condition == 6 ~ 'utilitarian'))
+
+ggplot(data = mood_data, aes(x = stage, y = rating, color = alcohol))+
+    facet_grid(rows = vars(focus),
+             cols = vars(factor))+
+  stat_summary(fun=mean, geom="point") +
+  scale_y_continuous(name="rating", limits=c(35, 48), breaks = seq(0,50,5)) +
+  scale_x_discrete(name = "stage", labels = c("1", "2", "3") )+ 
+  scale_color_manual(values = gender_pal) +
+  theme(axis.text.x = element_text( color="black", 
+                           size=2, angle=45))+
+  theme_light()
+
+
+```
+```{r analysis}
+
+mood_data$focus <- as.factor(mood_data$focus)
+
+# afex mixed effects model
+mood_afx <- afex::aov_4(rating ~ focus*alcohol*stage*factor  + (factor*stage|subject), data = mood_data)
+summary(mood_afx)
+
+# interaction focus:alcohol
+
+foc_alc_emm <- emmeans::emmeans(mood_afx, c("focus", "alcohol"), model = "multivariate")
+foc_alc_emm
+
+emmeans::contrast(
+  foc_alc_emm,
+  stage = "poly",
+  adjust = "holm"
+  )
+
+#interaction alcohol:factor:stage
+
+fact_stage_alc_emm <- emmeans::emmeans(mood_afx, c("factor", "alcohol", "stage"), model = "multivariate")
+fact_stage_alc_emm
+
+emmeans::contrast(
+  fact_stage_alc_emm,
+  interaction = c(stage = "poly", fact = "trt.vs.ctrl"),
+  ref = 1,
+  adjust = "holm"
+  )
+
+```
 
