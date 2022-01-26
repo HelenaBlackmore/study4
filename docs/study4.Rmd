@@ -545,11 +545,76 @@ ggplotly(beer_prop)
 - gustatory data (expected and perceived are in )
 - because of independent measures design we can use the `mediation` package, function `mediate()`
   **some resources and documentation **
-  - https://towardsdatascience.com/doing-and-reporting-your-first-mediation-analysis-in-r-2fe423b92171
-  - https://imai.fas.harvard.edu/projects/files/mediationReview.pdf
+  - https://ademos.people.uic.edu/Chapter14.html#24_method_2:_the_mediation_pacakge_method
+  - https://imai.fas.harvard.edu/research/files/mediationR2.pdf
 
 ## Bitterness
-```{r bitter_plot, fig.cap = "Expected and perceived ratings of bitterness"}
+
+- no direct or indirect effect of focus or alcoholcontent on perceived orexpected bitterness
+
+```{r bitter_mediate}
+bitter_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, bitterE, bitter)
+   # prep dataset
+
+# model m A --> M
+mbm <- lm(bitterE ~ focus*alcohol, data = bitter_dat)
+
+# model A--> B
+mby <-lm(bitter ~ bitterE + focus*alcohol,  data = bitter_dat)
+
+# robustSE = TRUE to get heteroscedasticity consistent SE
+# nonparametric bootstrap rather than the quasi-Bayesian Monte
+# Carlo simulation for variance estimation via the boot = TRUE argument
+broom::tidy(mbm)
+med_bitter_focusH <- mediate(mbm, mby, 
+                            sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "bitterE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
+
+med_bitter_focusU <- mediate(mbm, mby, 
+                            sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "bitterE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
+
+
+summary(med_bitter_focusH)
+plot(med_bitter_focusH)
+
+summary(med_bitter_focusU)
+plot(med_bitter_focusU)
+
+med_bitter_alcohol <- mediate(mbm, mby, 
+                              sims = 1000, 
+                              boot.ci.type = "perc", 
+                              treat = "alcohol", 
+                              mediator = "bitterE",
+                              robustSE = TRUE, 
+                              boot = TRUE,
+                              conf.level = 0.95, 
+                              control = "alcoholic", 
+                              control.value = "alcoholic", 
+                              treat.value = "non-alcoholic")
+
+summary(med_bitter_alcohol)
+plot(med_bitter_alcohol)
+```
+
+```{r bitter_plot, fig.cap = "Expected and perceived ratings of bitterness \n errorbars indicate 95% CI (1.96 SE)"}
 
 bitter_tib <-bitter_dat %>%
   pivot_longer(cols = starts_with("bitter"),
@@ -566,7 +631,7 @@ bitter_tib <-bitter_dat %>%
 rating_labs <- c("perceived", "expected")
 names(rating_labs) <- c("bitter", "bitterE")
 
-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = bitter_tib ) +
+bitter_plot<-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = bitter_tib ) +
   facet_grid(~ bitter, 
              labeller = labeller(bitter = rating_labs))+
    geom_bar(stat="identity", position=position_dodge())+
@@ -579,38 +644,79 @@ ggplot(aes(x= focus, y = meanB, fill = alcohol), data = bitter_tib ) +
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
 
+ggplotly(bitter_plot)
+
 ```
 
-```{r bitter_mediate}
-bitter_dat <- D3_dat%>%
-  dplyr::select(subject, alcohol, focus, condition, bitterE, bitter)
+## Refreshment
+- no direct or indirect effect of focus/ alcohol content on perceived refreshment
+- focus on effects of drink --> increased expectations of refreshment, but did not affect perception
+
+```{r refreshment_mediate}
+refresh_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, refreshmentE, refreshment)
    # prep dataset
 
 # model m A --> M
-mbm <- lm(bitterE ~ focus + alcohol, data = bitter_dat)
+mrm <- lm(refreshmentE ~ focus*alcohol, data = refresh_dat)
 
 # model A--> B
-mby <-lm(bitter ~ bitterE + focus + alcohol,  data = bitter_dat)
+mry <-lm(refreshment ~ refreshmentE + focus*alcohol,  data = refresh_dat)
 
-med_bitter_focus <- mediate(mbm, mby, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "bitterE",
-   control = "control",
-  conf.level = 0.95, control.value = 0, treat.value = 1)
+broom::tidy(mrm)%>%
+  kable(digits = 3, caption = "effect of alcohol and focus on expected refreshment")%>%
+  kable_styling(full_width = TRUE)
 
-summary(med_bitter_focus)
-plot(med_bitter_focus)
+med_refreshment_focusH <- mediate(mrm, mry, 
+                                  sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "refreshmentE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
 
-med_bitter_alcohol <- mediate(mbm, mby, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "bitterE",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+summary(med_refreshment_focusH)
+plot(med_refreshment_focusH)
 
-summary(med_bitter_alcohol)
-plot(med_bitter_alcohol)
+med_refreshment_focusU <- mediate(mrm, mry, 
+                                  sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "refreshmentE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
+
+summary(med_refreshment_focusU)
+plot(med_refreshment_focusU)
+
+
+med_refreshment_alcohol <- mediate(mrm, mry,
+                                   sims = 1000, 
+                                  boot.ci.type = "perc", 
+                                  treat = "alcohol", 
+                                  mediator = "refreshmentE",
+                                  robustSE = TRUE, 
+                                  boot = TRUE,
+                                  conf.level = 0.95, 
+                                  control = "alcoholic", 
+                                  control.value = "alcoholic", 
+                                  treat.value = "non-alcoholic")
+
+summary(med_refreshment_alcohol)
+plot(med_refreshment_alcohol)
+
 ```
 
-
-## Refreshment
 ```{r refreshment_plot, fig.cap = "Expected and perceived ratings of Refreshment \n errorbars indicate 95% CI (1.96 SE)"}
+
 
 refreshment_tib <-refresh_dat %>%
   pivot_longer(cols = starts_with("refreshment"),
@@ -627,7 +733,7 @@ refreshment_tib <-refresh_dat %>%
 rating_labs <- c("perceived", "expected")
 names(rating_labs) <- c("refreshment", "refreshmentE")
 
-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = refreshment_tib ) +
+refreshment_plot <- ggplot(aes(x= focus, y = meanB, fill = alcohol), data = refreshment_tib ) +
   facet_grid(~ refreshment, 
              labeller = labeller(refreshment = rating_labs))+
    geom_bar(stat="identity", position=position_dodge())+
@@ -640,38 +746,78 @@ ggplot(aes(x= focus, y = meanB, fill = alcohol), data = refreshment_tib ) +
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
 
-```
-
-```{r refreshment_mediate}
-refresh_dat <- D3_dat%>%
-  dplyr::select(subject, alcohol, focus, condition, refreshmentE, refreshment)
-   # prep dataset
-
-# model m A --> M
-mrm <- lm(refreshmentE ~ focus + alcohol, data = refresh_dat)
-
-# model A--> B
-mry <-lm(refreshment ~ refreshmentE + focus + alcohol,  data = refresh_dat)
-
-med_refreshment_focus <- mediate(mrm, mry, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "refreshmentE",
-   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
-
-summary(med_refreshment_focus)
-plot(med_refreshment_focus)
-
-med_refreshment_alcohol <- mediate(mrm, mry, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "refreshmentE",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
-
-summary(med_refreshment_alcohol)
-plot(med_refreshment_alcohol)
+ggplotly(refreshment_plot)
 
 ```
 
 ## Liking
 
-```{r liking_plot, fig.cap = "Expected and perceived ratings of liking"}
+- no effect of focus or alcohol content on expected or perceived liking
+
+```{r liking_mediate}
+liking_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, likingE, liking)
+   # prep dataset
+
+# model m A --> M
+mlm <- lm(likingE ~ focus*alcohol, data = liking_dat)
+
+# model A--> B
+mly <-lm(liking ~ likingE + focus*alcohol,  data = liking_dat)
+
+
+broom::tidy(mlm)%>%
+  kable(digits = 3, caption = "effect of alcohol and focus on expected liking")%>%
+  kable_styling(full_width = TRUE)
+
+med_liking_focusH <- mediate(mlm, mly, 
+                            sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "likingE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
+
+summary(med_liking_focusH)
+plot(med_liking_focusH)
+
+med_liking_focusU <- mediate(mlm, mly, 
+                            sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "likingE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
+
+summary(med_liking_focusU)
+plot(med_liking_focusU)
+
+med_liking_alcohol <- mediate(mlm, mly, 
+                              sims = 1000, 
+                              boot.ci.type = "perc", 
+                              treat = "alcohol", 
+                              mediator = "likingE",
+                              robustSE = TRUE, 
+                              boot = TRUE,
+                              conf.level = 0.95, 
+                              control = "alcoholic", 
+                              control.value = "alcoholic", 
+                              treat.value = "non-alcoholic")
+
+summary(med_liking_alcohol)
+plot(med_liking_alcohol)
+
+```
+
+```{r liking_plot, fig.cap = "Expected and perceived ratings of liking \n errorbars indicate 95% CI (1.96 SE)"}
 
 liking_tib <-liking_dat %>%
   pivot_longer(cols = starts_with("liking"),
@@ -688,7 +834,7 @@ liking_tib <-liking_dat %>%
 rating_labs <- c("perceived", "expected")
 names(rating_labs) <- c("liking", "likingE")
 
-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = liking_tib ) +
+liking_plot <- ggplot(aes(x= focus, y = meanB, fill = alcohol), data = liking_tib ) +
   facet_grid(~ liking, 
              labeller = labeller(liking = rating_labs))+
    geom_bar(stat="identity", position=position_dodge())+
@@ -701,38 +847,81 @@ ggplot(aes(x= focus, y = meanB, fill = alcohol), data = liking_tib ) +
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
 
+ggplotly(liking_plot)
+
 ```
 
-```{r liking_mediate}
-liking_dat <- D3_dat%>%
-  dplyr::select(subject, alcohol, focus, condition, likingE, liking)
+
+
+## Body
+- alcoholic beer rated as having fuller body vs. non-alcoholic beer, however not mediated by expectations of body
+-no effect of focus on expected or perceived body
+
+```{r body_mediate}
+body_dat <- D3_dat%>%
+  dplyr::select(subject, alcohol, focus, condition, bodyE, body)
    # prep dataset
 
 # model m A --> M
-mlm <- lm(likingE ~ focus + alcohol, data = liking_dat)
+mbom <- lm(bodyE ~ focus*alcohol, data = body_dat)
 
 # model A--> B
-mly <-lm(liking ~ likingE + focus + alcohol,  data = liking_dat)
+mboy <-lm(body ~ bodyE + focus*alcohol,  data = body_dat)
 
-med_liking_focus <- mediate(mlm, mly, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "likingE",
-   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+broom::tidy(mbom)%>%
+  kable(digits = 3, caption = "effect of alcohol and focus on expected body") %>%
+  kable_styling(full_width = TRUE)
 
-summary(med_liking_focus)
-plot(med_liking_focus)
+med_body_focusH <- mediate(mbom, mboy,
+                          sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "bodyE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
 
-med_liking_alcohol <- mediate(mlm, mly, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "likingE",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+summary(med_body_focusH)
 
-summary(med_liking_alcohol)
-plot(med_liking_alcohol)
+plot(med_body_focusH)
+
+med_body_focusU <- mediate(mbom, mboy,
+                          sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "bodyE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
+
+summary(med_body_focusU)
+
+plot(med_body_focusU)
+
+med_body_alcohol <- mediate(mbom, mboy,
+                             sims = 1000, 
+                              boot.ci.type = "perc", 
+                              treat = "alcohol", 
+                              mediator = "bodyE",
+                              robustSE = TRUE, 
+                              boot = TRUE,
+                              conf.level = 0.95, 
+                              control = "alcoholic", 
+                              control.value = "alcoholic", 
+                              treat.value = "non-alcoholic")
+
+summary(med_body_alcohol)
+plot(med_body_alcohol)
 
 ```
 
-## Body
-
-```{r body_plot, fig.cap = "Expected and perceived ratings of body"}
+```{r body_plot, fig.cap = "Expected and perceived ratings of body\n errorbars indicate 95% CI (1.96 SE) "}
 
 body_tib <-body_dat %>%
   pivot_longer(cols = starts_with("body"),
@@ -749,7 +938,7 @@ body_tib <-body_dat %>%
 rating_labs <- c("perceived", "expected")
 names(rating_labs) <- c("body", "bodyE")
 
-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = body_tib ) +
+body_plot <-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = body_tib ) +
   facet_grid(~ body, 
              labeller = labeller(body = rating_labs))+
    geom_bar(stat="identity", position=position_dodge())+
@@ -762,44 +951,20 @@ ggplot(aes(x= focus, y = meanB, fill = alcohol), data = body_tib ) +
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
 
-```
-
-```{r body_mediate}
-body_dat <- D3_dat%>%
-  dplyr::select(subject, alcohol, focus, condition, bodyE, body)
-   # prep dataset
-
-# model m A --> M
-mbom <- lm(bodyE ~ focus + alcohol, data = body_dat)
-
-# model A--> B
-mboy <-lm(body ~ bodyE + focus + alcohol,  data = body_dat)
-
-med_body_focus <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "bodyE",
-   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
-
-summary(med_body_focus)
-
-plot(med_body_focus)
-
-med_body_alcohol <- mediate(mbom, mboy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "bodyE",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
-
-summary(med_body_alcohol)
-plot(med_body_alcohol)
+ggplotly(body_plot)
 
 ```
-
 
 
 
 # Post - ingestive experience
 
 ## Satisfaction
+- no effect of focus and alcohol content on expected satisfaction
+- participants rated  perceived satisfaction lower when they drank non-alcoholic beer
+- effect of alcohol on perceived satisfaction not mediated by expected satisfaction 
 
-```{r satis_plot, fig.cap = "Expected and perceived ratings of satisfaction"}
+```{r satis_plot, fig.cap = "Expected and perceived ratings of satisfaction\n errorbars indicate 95% CI (+/- 1.96 SE)"}
 
 satis_tib <-satis_dat %>%
   pivot_longer(cols = starts_with("satis"),
@@ -816,7 +981,7 @@ satis_tib <-satis_dat %>%
 rating_labs <- c("perceived", "expected")
 names(rating_labs) <- c("satis", "satisE")
 
-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = satis_tib ) +
+satis_plot<-ggplot(aes(x= focus, y = meanB, fill = alcohol), data = satis_tib ) +
   facet_grid(~ satis, 
              labeller = labeller(satis = rating_labs))+
    geom_bar(stat="identity", position=position_dodge())+
@@ -829,26 +994,63 @@ ggplot(aes(x= focus, y = meanB, fill = alcohol), data = satis_tib ) +
   scale_fill_manual(values = gender_pal) +
   theme_minimal()
 
+ggplotly(satis_plot)
+
 ```
 
 ```{r satis_mediate}
 
 # model m A --> M
-msm <- lm(satisE ~ focus + alcohol, data = satis_dat)
+msm <- lm(satisE ~ focus*alcohol, data = satis_dat)
 
 # model A--> B
-msy <-lm(satis ~ satisE + focus + alcohol,  data = satis_dat)
+msy <-lm(satis ~ satisE + focus*alcohol,  data = satis_dat)
 
-med_satis_focus <- mediate(msm, msy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "satisE",
-   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
+broom::tidy(msm)%>%
+  kable(digits = 3, caption = "effect of alcoholand focus on expected satisfaction")%>%
+  kable_styling(full_width = TRUE)
 
-summary(med_satis_focus)
-plot(med_satis_focus)
+med_satis_focusU <- mediate(msm, msy, 
+                           sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "satisE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
 
-med_satis_alcohol <- mediate(msm, msy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "satisE",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+summary(med_satis_focusU)
+plot(med_satis_focusU)
+
+med_satis_focusH <- mediate(msm, msy, 
+                           sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "satisE",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
+
+summary(med_satis_focusH)
+plot(med_satis_focusH)
+
+med_satis_alcohol <- mediate(msm, msy, 
+                             sims = 1000, 
+                              boot.ci.type = "perc", 
+                              treat = "alcohol", 
+                              mediator = "satisE",
+                              robustSE = TRUE, 
+                              boot = TRUE,
+                              conf.level = 0.95, 
+                              control = "alcoholic", 
+                              control.value = "alcoholic", 
+                              treat.value = "non-alcoholic")
 
 summary(med_satis_alcohol)
 plot(med_satis_alcohol)
@@ -856,39 +1058,71 @@ plot(med_satis_alcohol)
 ```
 
 
-There was an effect of alcohol content on expected and perceived satisfaction. Participants rated their expected and perceived satisfaction lower when they drank non-alcoholic beer. We, however did not observe a mediation effect. (potentially small effect size, given the pp sample)
-
-** more detail needed here **
 
 ## Willingness to pay
+- no effect of focus on willingness to pay
+- effect of alcoholcontent on wtp ( pp would pay slightly more for alcoholic beer)
 
 ```{r wtp_mediate}
 
 # model m A --> M
-mwm <- lm(satis ~ focus + alcohol, data = satis_dat)
+mwm <- lm(satis ~ focus*alcohol, data = satis_dat)
 
 # model A--> B
-mwy <-lm(wtp ~ satis + focus + alcohol,  data = satis_dat)
+mwy <-lm(wtp ~ satis + focus*alcohol,  data = satis_dat)
 
-med_wtp_focus <- mediate(mwm, mwy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "focus", mediator = "satis",
-   control = "control", conf.level = 0.95, control.value = 0, treat.value = 1)
 
-summary(med_wtp_focus)
-plot(med_wtp_focus)
+med_wtp_focusH <- mediate(mwm, mwy, 
+                          sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "satis",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "hedonic")
 
-med_wtp_alcohol <- mediate(mwm, mwy, sims = 1000, boot = FALSE,
-  boot.ci.type = "perc", treat = "alcohol", mediator = "satis",
-  conf.level = 0.95, control = "alcoholic", control.value = 0, treat.value = 1)
+summary(med_wtp_focusH)
+plot(med_wtp_focusH)
+
+med_wtp_focusU <- mediate(mwm, mwy, 
+                          sims = 1000, 
+                            boot = TRUE,
+                            boot.ci.type = "perc", 
+                            treat = "focus", 
+                            mediator = "satis",
+                            control = "control", 
+                            robustSE = TRUE,  
+                            conf.level = 0.95,
+                            control.value = "control", 
+                            treat.value = "utilitarian")
+
+summary(med_wtp_focusU)
+plot(med_wtp_focusU)
+
+med_wtp_alcohol <- mediate(mwm, mwy, 
+                           sims = 1000, 
+                              boot.ci.type = "perc", 
+                              treat = "alcohol", 
+                              mediator = "satis",
+                              robustSE = TRUE, 
+                              boot = TRUE,
+                              conf.level = 0.95, 
+                              control = "alcoholic", 
+                              control.value = "alcoholic", 
+                              treat.value = "non-alcoholic")
 
 summary(med_wtp_alcohol)
 plot(med_wtp_alcohol)
 
 ```
+
 ```{r wtp_comparison}
 
 
-wtp_model <- robust::lmRob(wtp ~ focus + alcohol, data = satis_dat)
+wtp_model <- robust::lmRob(wtp ~ focus * alcohol, data = satis_dat)
 summary(wtp_model)
 
 wtp_tib <- satis_dat %>%
@@ -928,7 +1162,16 @@ wtp_bar
 
 ## Cognitive Performance
 
-Participants' cognitive performance was assessed using the inspection time task () which measures participants'information processing. Participants completed the task just before, 30 minutes and 60 minutes after consumption. The data was analysed using a growth curve analysis. 
+Participants' cognitive performance was assessed using the inspection time task (10.1016/j.neuroimage.2004.03.047) which measures participants'information processing. Participants completed the task just before, 30 minutes and 60 minutes after consumption. 
+
+-pp performance improves as duration of stimulus increases
+- effect of alcohol, stimulus duration and stage
+- interactions: 
+  alcohol*stimulus
+  stimulus*stage
+  alcohol\*stimulus\*stage
+- no effect of focus
+
 
 
 ```{r GC_performance}
@@ -942,6 +1185,7 @@ Participants' cognitive performance was assessed using the inspection time task 
 # contrasts
 
 itt_afx <- afex::aov_4(correct ~ focus*alcohol*stage*stimulus  + (stimulus*stage|subject), data = itt_dat)
+summary(itt_afx)
 
 # need to take effects apart and set contrasts
 
@@ -976,13 +1220,13 @@ emmeans::contrast(
   )
 ```
 
-```{r itt_plot, fig.cap= "Participants' cognitive performance"}
+```{r itt_plot, fig.cap= "Participants' cognitive performance", fig.width=1200}
 
 itt_dat$stimulus <- as.factor(itt_dat$stimulus) %>%
   fct_relevel(.,c("stim1", "stim2", "stim3", "stim4", "stim5", "stim6", "stim7", "stim8", "stim9", "stim10", "stim11", "stim12","stim13"))
 
 
-ggplot(data = itt_dat, aes(x = stimulus, y = correct, color = alcohol))+
+itt_plot<-ggplot(data = itt_dat, aes(x = stimulus, y = correct, color = alcohol))+
   facet_grid(rows = vars(focus),
              cols = vars(stage))+
   stat_summary(fun=mean, geom="point") +
@@ -990,8 +1234,10 @@ ggplot(data = itt_dat, aes(x = stimulus, y = correct, color = alcohol))+
   scale_x_discrete(name = "stimulus duration\n(ms)", labels =c("19", "25", "31", "37", "44", "50", "62", "75", "87", "100", "125", "150", "200") )+ 
   scale_color_manual(values = gender_pal) +
   theme(axis.text.x = element_text( color="black", 
-                           size=6, angle=45))+
+                           size=2, angle=45))+
   theme_minimal()
+
+ggplotly(itt_plot, height = 500, width=1200)
 
 ```
 
