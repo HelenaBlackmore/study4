@@ -589,6 +589,8 @@ mby <-lm(bitter ~ bitterE + focus*alcohol,  data = bitter_dat)
 # robustSE = TRUE to get heteroscedasticity consistent SE
 # nonparametric bootstrap rather than the quasi-Bayesian Monte
 # Carlo simulation for variance estimation via the boot = TRUE argument
+# also entering alcohol/focus as a covariate
+
 broom::tidy(mbm)
 med_bitter_focusH <- mediate(mbm, mby, 
                             sims = 1000, 
@@ -596,11 +598,11 @@ med_bitter_focusH <- mediate(mbm, mby,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "bitterE",
-                            control = "control", 
+                            covariates = "alcohol",
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
-                            treat.value = "hedonic")
+                            treat.value = "hedonic",)
 
 med_bitter_focusU <- mediate(mbm, mby, 
                             sims = 1000, 
@@ -608,7 +610,7 @@ med_bitter_focusU <- mediate(mbm, mby,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "bitterE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -629,7 +631,7 @@ med_bitter_alcohol <- mediate(mbm, mby,
                               robustSE = TRUE, 
                               boot = TRUE,
                               conf.level = 0.95, 
-                              control = "alcoholic", 
+                              covariates = "focus", 
                               control.value = "alcoholic", 
                               treat.value = "non-alcoholic")
 
@@ -696,7 +698,7 @@ med_refreshment_focusH <- mediate(mrm, mry,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "refreshmentE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -711,7 +713,7 @@ med_refreshment_focusU <- mediate(mrm, mry,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "refreshmentE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -729,7 +731,7 @@ med_refreshment_alcohol <- mediate(mrm, mry,
                                   robustSE = TRUE, 
                                   boot = TRUE,
                                   conf.level = 0.95, 
-                                  control = "alcoholic", 
+                                  covariates = "focus", 
                                   control.value = "alcoholic", 
                                   treat.value = "non-alcoholic")
 
@@ -799,7 +801,7 @@ med_liking_focusH <- mediate(mlm, mly,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "likingE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -814,7 +816,7 @@ med_liking_focusU <- mediate(mlm, mly,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "likingE",
-                            control = "control", 
+                            covariates = "alcohol",
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -831,7 +833,7 @@ med_liking_alcohol <- mediate(mlm, mly,
                               robustSE = TRUE, 
                               boot = TRUE,
                               conf.level = 0.95, 
-                              control = "alcoholic", 
+                              covariates = "focus", 
                               control.value = "alcoholic", 
                               treat.value = "non-alcoholic")
 
@@ -901,7 +903,7 @@ med_body_focusH <- mediate(mbom, mboy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "bodyE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -917,7 +919,7 @@ med_body_focusU <- mediate(mbom, mboy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "bodyE",
-                            control = "control", 
+                            covariates = "alcohol",
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -935,7 +937,7 @@ med_body_alcohol <- mediate(mbom, mboy,
                               robustSE = TRUE, 
                               boot = TRUE,
                               conf.level = 0.95, 
-                              control = "alcoholic", 
+                              covariates = "focus", 
                               control.value = "alcoholic", 
                               treat.value = "non-alcoholic")
 
@@ -1039,7 +1041,7 @@ med_satis_focusU <- mediate(msm, msy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "satisE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -1054,7 +1056,7 @@ med_satis_focusH <- mediate(msm, msy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "satisE",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -1071,7 +1073,7 @@ med_satis_alcohol <- mediate(msm, msy,
                               robustSE = TRUE, 
                               boot = TRUE,
                               conf.level = 0.95, 
-                              control = "alcoholic", 
+                              covariates = "focus", 
                               control.value = "alcoholic", 
                               treat.value = "non-alcoholic")
 
@@ -1101,7 +1103,7 @@ med_wtp_focusH <- mediate(mwm, mwy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "satis",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -1116,7 +1118,7 @@ med_wtp_focusU <- mediate(mwm, mwy,
                             boot.ci.type = "perc", 
                             treat = "focus", 
                             mediator = "satis",
-                            control = "control", 
+                            covariates = "alcohol", 
                             robustSE = TRUE,  
                             conf.level = 0.95,
                             control.value = "control", 
@@ -1133,7 +1135,7 @@ med_wtp_alcohol <- mediate(mwm, mwy,
                               robustSE = TRUE, 
                               boot = TRUE,
                               conf.level = 0.95, 
-                              control = "alcoholic", 
+                             covariates = "focus",
                               control.value = "alcoholic", 
                               treat.value = "non-alcoholic")
 
@@ -1295,13 +1297,37 @@ ggplot(data = mood_data, aes(x = stage, y = rating, color = alcohol))+
 
 
 ```
-```{r analysis}
+```{r analysis, include=FALSE}
 
 mood_data$focus <- as.factor(mood_data$focus)
 
 # afex mixed effects model
 mood_afx <- afex::aov_4(rating ~ focus*alcohol*stage*factor  + (factor*stage|subject), data = mood_data)
 summary(mood_afx)
+
+
+# main effect stage
+
+stage_emm <- emmeans::emmeans(mood_afx, "stage", model = "multivariate")
+stage_emm
+
+emmeans::contrast(
+  stage_emm,
+  method = "pairwise",
+  adjust = "holm"
+  )
+
+# main effect mood
+fact_emm <- emmeans::emmeans(mood_afx, "factor", model = "multivariate")
+fact_emm
+
+emmeans::contrast(
+  fact_emm,
+  method = "pairwise",
+  adjust = "holm"
+  )
+
+
 
 # interaction focus:alcohol
 
@@ -1310,9 +1336,34 @@ foc_alc_emm
 
 emmeans::contrast(
   foc_alc_emm,
-  stage = "poly",
+  interaction = c(focus = "trt.vs.ctrl", alcohol = "pairwise"),
+  ref = 1,
   adjust = "holm"
   )
+
+afex::afex_plot(mood_afx,
+                x = "focus",
+                trace = "alcohol",
+                mapping = "colour"
+                ) +
+  theme_minimal()
+
+#interaction mood:stage
+fact_stage_emm <- emmeans::emmeans(mood_afx, c("factor", "stage"), model = "multivariate")
+fact_stage_emm
+
+emmeans::contrast(
+  fact_stage_emm,
+  interaction = c(stage = "pairwise", fact = "pairwise"),
+  adjust = "holm"
+  )
+
+afex::afex_plot(mood_afx,
+                x = "stage",
+                trace = "factor",
+                mapping = "colour"
+                ) +
+  theme_minimal()
 
 #interaction alcohol:factor:stage
 
@@ -1321,10 +1372,34 @@ fact_stage_alc_emm
 
 emmeans::contrast(
   fact_stage_alc_emm,
-  interaction = c(stage = "poly", fact = "trt.vs.ctrl"),
-  ref = 1,
+  interaction = c(stage = "poly", fact = "pairwise", alcohol = "pairwise"),
   adjust = "holm"
   )
 
+afex::afex_plot(mood_afx,
+                x = "stage",
+                trace = "alcohol",
+                mapping = "colour",
+                panel = "factor"
+                ) +
+  theme_minimal()
 ```
+Assessing the effects of alcohol content and focus on mood, we observed main effect of mood type, main effect of stage. We have also observed interactions between focus and alcohol, mood and stage and a three-way intearction between mood, alcohol and stage. We will briefly report all main effects and interactions but will focus on the interpretation of the three-way interaction and the two-way intercation between focus and alcohol content.
+
+### main effect of mood
+
+There was a significant main effect of factor (from the Bond-Lader questionnaire: calm, content, alert) on ratings. Participants' ratings of feeling *calm* were significantly lower than feelings related to *content* and *alertness*. Participants also rated feelings of *alertness* significantly higher than feelings of *calm* or *content*. Feeling *content* was rated significantly higher than feeling *calm*, but significantly lower than feeling *alert*. **careful--> interactions!!** 
+
+### main effect of stage
+There was a significant effect of stage on mood ratings. Mood (all three factors) was rated significantly higher in stage 3 than in stage 1, there was no difference between stage 1 and stage 2 or stage 2 and stage 3.  **careful--> interaction!!**
+
+### **two-way interaction: focus*alcohol**
+The ratings were affected by focus  and alcohol content of the beer. In the hedonic condition, compared to control condition, the ratings were significantly higher for participants who drank alcoholic beer. This difference, however was not present in the utilitarian condition.
+
+### two-way interaction mood*stage
+Interestingly, participants self-reported feeling more alert at the end (stage 3) of the experiment than at the beginning (stage 1). Participants also rated feeling less calm during the experiment (stages 2 and 3) than at the beginning. This was regardless of the conditions they were in. **careful interaction**
+
+
+### **three-way interaction alcohol\*mood\*stage**
+ Participants rated feeling more alert as the experiment progressed, more so in the alcoholic beer condition. 
 
