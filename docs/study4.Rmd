@@ -8,7 +8,7 @@ output:
 ---
 <!-- run this to knit:
 
-rmarkdown::render('study4.Rmd',
+rmarkdown::render('docs/study4.Rmd',
                   output_file = paste('index.html'))
                                                           
                                                           -->
@@ -1297,14 +1297,22 @@ ggplot(data = mood_data, aes(x = stage, y = rating, color = alcohol))+
 
 
 ```
-```{r analysis, include=FALSE}
+### the model
+```{r mood_summary, include=TRUE}
 
 mood_data$focus <- as.factor(mood_data$focus)
 
 # afex mixed effects model
 mood_afx <- afex::aov_4(rating ~ focus*alcohol*stage*factor  + (factor*stage|subject), data = mood_data)
 summary(mood_afx)
+```
 
+Assessing the effects of alcohol content and focus on mood, we observed main effect of mood type, main effect of stage. We have also observed interactions between focus and alcohol, mood and stage and a three-way intearction between mood, alcohol and stage. We will briefly report all main effects and interactions but will focus on the interpretation of the three-way interaction and the two-way intercation between focus and alcohol content.
+
+
+### main effect of stage
+
+```{r mood_stage}
 
 # main effect stage
 
@@ -1317,6 +1325,15 @@ emmeans::contrast(
   adjust = "holm"
   )
 
+```
+There was a significant effect of stage on mood ratings. Mood (all three factors) was rated significantly higher in stage 3 than in stage 1, there was no difference between stage 1 and stage 2 or stage 2 and stage 3.  **careful--> interaction!!**
+
+
+### main effect of mood (factor)
+- calm, content, alert
+- not that interesting because there are interactions
+```{r mood_factor}
+
 # main effect mood
 fact_emm <- emmeans::emmeans(mood_afx, "factor", model = "multivariate")
 fact_emm
@@ -1327,7 +1344,14 @@ emmeans::contrast(
   adjust = "holm"
   )
 
+```
 
+There was a significant main effect of factor (from the Bond-Lader questionnaire: calm, content, alert) on ratings. Participants' ratings of feeling *calm* were significantly lower than feelings related to *content* and *alertness*. Participants also rated feelings of *alertness* significantly higher than feelings of *calm* or *content*. Feeling *content* was rated significantly higher than feeling *calm*, but significantly lower than feeling *alert*. **careful--> interactions!!**
+
+
+
+### **two-way interaction:** focus*alcohol interaction
+```{r mood_fa}
 
 # interaction focus:alcohol
 
@@ -1347,6 +1371,13 @@ afex::afex_plot(mood_afx,
                 mapping = "colour"
                 ) +
   theme_minimal()
+```
+
+The ratings were affected by focus  and alcohol content of the beer. In the hedonic condition, compared to control condition, the ratings were significantly higher for participants who drank alcoholic beer. This difference, however was not present in the utilitarian condition.
+
+
+###interaction factor*stage
+```{r mood_fs}
 
 #interaction mood:stage
 fact_stage_emm <- emmeans::emmeans(mood_afx, c("factor", "stage"), model = "multivariate")
@@ -1364,6 +1395,14 @@ afex::afex_plot(mood_afx,
                 mapping = "colour"
                 ) +
   theme_minimal()
+
+```
+
+Interestingly, participants self-reported feeling more alert at the end (stage 3) of the experiment than at the beginning (stage 1). Participants also rated feeling less calm during the experiment (stages 2 and 3) than at the beginning. This was regardless of the conditions they were in. **careful interaction**
+
+### interaction alcohol-factor-stage
+
+```{r mood_3way}
 
 #interaction alcohol:factor:stage
 
@@ -1384,22 +1423,7 @@ afex::afex_plot(mood_afx,
                 ) +
   theme_minimal()
 ```
-Assessing the effects of alcohol content and focus on mood, we observed main effect of mood type, main effect of stage. We have also observed interactions between focus and alcohol, mood and stage and a three-way intearction between mood, alcohol and stage. We will briefly report all main effects and interactions but will focus on the interpretation of the three-way interaction and the two-way intercation between focus and alcohol content.
-
-### main effect of mood
-
-There was a significant main effect of factor (from the Bond-Lader questionnaire: calm, content, alert) on ratings. Participants' ratings of feeling *calm* were significantly lower than feelings related to *content* and *alertness*. Participants also rated feelings of *alertness* significantly higher than feelings of *calm* or *content*. Feeling *content* was rated significantly higher than feeling *calm*, but significantly lower than feeling *alert*. **careful--> interactions!!** 
-
-### main effect of stage
-There was a significant effect of stage on mood ratings. Mood (all three factors) was rated significantly higher in stage 3 than in stage 1, there was no difference between stage 1 and stage 2 or stage 2 and stage 3.  **careful--> interaction!!**
-
-### **two-way interaction: focus*alcohol**
-The ratings were affected by focus  and alcohol content of the beer. In the hedonic condition, compared to control condition, the ratings were significantly higher for participants who drank alcoholic beer. This difference, however was not present in the utilitarian condition.
-
-### two-way interaction mood*stage
-Interestingly, participants self-reported feeling more alert at the end (stage 3) of the experiment than at the beginning (stage 1). Participants also rated feeling less calm during the experiment (stages 2 and 3) than at the beginning. This was regardless of the conditions they were in. **careful interaction**
 
 
-### **three-way interaction alcohol\*mood\*stage**
  Participants rated feeling more alert as the experiment progressed, more so in the alcoholic beer condition. 
 
